@@ -18,18 +18,21 @@
 \graphicspath{{../}{../assets/}}
 
 % --- document configuration ---
-\newcommand{\mytitle}{Rust for HPC Application}
+\newcommand{\mytitle}{Rust for HPC Applications}
 % Leave empty for no subtitle
-\newcommand{\mysubtitle}{Going Fast}
+\newcommand{\mysubtitle}{An Practical Introduction in Rust Performance Engineering}
 \newcommand{\myauthor}{Lars Quentin}
 \newcommand{\myauthorurl}{lquenti.de}
 \newcommand{\myvenue}{Recent Trends in High-Performance Data Analytics}
 % For example, use \today
-\newcommand{\mydate}{27.04.2023}
+\newcommand{\mydate}{29.06.2023}
 % For example, Institute for Computer Science / GWDG
 \newcommand{\myinstitute}{GWDG / CIDAS}
 
 \configuretitlepage
+
+\usepackage{listings}
+
 
 
 \begin{document}
@@ -38,15 +41,223 @@
 	\titlepage
 \end{frame}
 
-% --- slides begin ---
-
-
-\section{Assesment}
-% Slide 5: results: birdhouse, maybe bird in it
-\begin{frame}{Assesment}
-\label{pg:lastpage} % Label on last frame to get the page number for footer
-lol
+\begin{frame}{Overview}
+\tableofcontents
 \end{frame}
 
+\section{Introduction}
+
+\begin{frame}{Learning Objectives}
+  Auch m\"undlich: Aufbau des Vortrages, aus Anwendung eine Tour durch Tooling und state of the art
+\end{frame}
+
+\begin{frame}{Warning}
+  Never optimize too early. Steal from ref, maybe the gist?
+\end{frame}
+
+\begin{frame}{Why Rust is a good fit for HPC}
+  \begin{itemize}
+    \item TODO unpolished
+    \item Wie modernes cpp vom Compiler erzwungen
+    \item RAII
+    \item smart\_ptr
+    \item Zudem viel fp, iterators, traits statt deep inheritance, immutable... etc
+    \item Sehr modern
+    \item Guter Paketmanager
+    \item Py/CPP-Interop
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Problem: Matrix multiplication}
+  TODO split Formula and visualisation
+\end{frame}
+
+\section{Simplified Problem}
+
+\begin{frame}{Simplified Problem: $3 \times 3$ Matrix}
+  \begin{itemize}
+    \item Mention that this slide is meant to introduce to the rust syntax
+    \item Erste Impl
+    \item Dann noch driver code $A \cdot B \cdot C$
+    \item Dann direkt vorschlagen (muendlich): ref vs val koennten wir ersetzen. Das ergibt naiv nen perf boost. Aber wie finden wir das heraus?
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Microbenchmarking}
+  \begin{itemize}
+    \item cargo bench doof (+benchcmp)
+    \item criterion cool (+critcmp)
+    \item Maybe also show the code, but definitely show criterions features
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Benchmarking Full Applications}
+  \begin{itemize}
+    \item Hyperfine presentation
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Benchmarking Results}
+  Zeigt natuerlich improvement
+\end{frame}
+
+\begin{frame}{Next Improvement: Less Heap Allocation}
+  Hier einfach Code, Highlight die Veraenderung
+\end{frame}
+
+\begin{frame}{Next Improvement: 1 vs 2 derefs}
+  Hier einfach Code, Highlight die Veraenderung\\
+  Muendlich: Bei dem Spielproblem ist der Code so uebersichtlich dass wir noch den Assembler analysieren koennen
+\end{frame}
+
+\begin{frame}{Assembly 1: Compiler Explorer}
+  No points, just show a screenshot and explain that one can change compiler, flags and map the assembly
+\end{frame}
+
+\begin{frame}{Assembly 2: cargo-show-asm}
+  short slide
+\end{frame}
+
+\begin{frame}{Assembly 3: Loop Unrolling and Function Inlining}
+  \begin{block}{Loop Unrolling}
+    \begin{itemize}
+      \item Macht es automatisch in unserem Fall
+      \item Ansonsten gibt es dafuer auch eine Macro-Crate
+    \end{itemize}
+  \end{block}
+  \begin{block}{Inlining}
+    \begin{itemize}
+      \item Macht es bei uns nicht
+      \item Es gibt aber compiler hints
+    \end{itemize}
+  \end{block}
+\end{frame}
+
+\section{Real Problem}
+
+\begin{frame}{Introduction Real Problem}
+  \begin{itemize}
+    \item Problemstellung: Dir wird ein wissenschaftliches Programm gegeben was zu langsam ist und optimiert werden soll
+    \item Woran liegt es?
+    \item Wie finde ich das heraus?
+    \item Loesung: Profiling.
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Profiling}
+  \begin{itemize}
+    \item Da Rust binaries produziert, gehen alle Profiler:
+      \begin{itemize}
+        \item Namedropping: perf, cachegrind
+        \item rustfilt kann Symbole demanglen falls generisches Tool
+      \end{itemize}
+    \item Wir fokussieren uns hier auf 2 Tools, da diese Rustspezifisch sind:
+      \begin{itemize}
+        \item Cargo flamegraph
+        \item iai
+      \end{itemize}
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Cargo flamegraph}
+  \begin{itemize}
+    \item Erwaehnen dass es perf+dtrace nutzt.
+    \item statistical Profiler
+    \item Angenommen auf unser Problem hat es zurueckgegeben: Es ist wieder Matrix multiplication
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{The Code}
+  Hier den unoptimierten Code\\
+  Erwaehnen dass wir es fuer eine grosse Groesse (n=2048 oder so?) testen
+\end{frame}
+
+\begin{frame}{Applying our previous knowledge}
+  Optimized code\\
+  Also show the improvements!\\
+  Mention: Now lets get some further free wins
+\end{frame}
+
+\begin{frame}{Compiler Optimizations!}
+  \begin{itemize}
+    \item Release build!
+    \item LTO LVVM
+    \item Native architecture
+    \item Code Units LLVM
+    \item PGO (out of scope, noch ziemlich frickelig, ansonsten gibts noch likely/unlikely)
+    \item Jeweils immer weitere improvements drunterballern in prozent und absolut
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Tranpose Trick}
+  \begin{itemize}
+    \item Sollte was bringen da\dots
+    \item Jedoch $\Theta(n^2)$ precompute
+    \item Lohnt es sich?
+      \begin{itemize}
+        \item Ja, hier das Result
+      \end{itemize}
+    \item Frage 2: Verringert es die Cache Misses?
+      \begin{itemize}
+        \item Dafuer brauchen wir einen Profiler.
+      \end{itemize}
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Iai}
+  \begin{itemize}
+    \item Based on cachegrind
+    \item Emuliert
+    \item Sehr gut fuer CI
+    \item Result: Jup verbessert L1 caches
+  \end{itemize}
+\end{frame}
+
+\section{Parallelism}
+\begin{frame}{SIMD (nightly only)}
+  Show code here, also rebenchmark
+\end{frame}
+
+\begin{frame}{Rayon}
+  \begin{itemize}
+    \item Bisschen was es ist, aequivelent zu openMP
+    \item Dafuer muessten wir unseren kompletten Algo funktional recoden
+    \item Somit out of scope, aber mal driver code zeigen
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{MPI-rs}
+  \begin{titemize}
+    \item Standard MPI (laeuft auch auf lcuster)
+    \item Mit anderen kompatibel (mit openmpi getestet)
+    \item Erklaeren was es hat und nicht hat
+  \end{itemize}
+\end{frame}
+
+\section{Conclusion}
+\begin{frame}{Further Ressources}
+  \begin{itemize}
+    \item Rust perf book (chapter examples)
+      \begin{itemize}
+        \item Bounds chacking
+        \item I/O
+        \item Perf linter clippy
+        \item Type sizes
+      \end{itemize}
+    \item Algorithmica
+      \begin{itemize}
+        \item What it covers in topics
+        \item (maybe also further improvements it shows for this problem...)
+      \end{itemize}
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Summary}
+\label{pg:lastpage} % Label on last frame to get the page number for footer
+  \begin{itemize}
+    \item Rust is viable
+    \item Enumeration of tooling
+  \end{itemize}
+\end{frame}
 
 \end{document}
