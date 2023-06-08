@@ -34,51 +34,38 @@ fn driver_code2(a: &Vec<Vec<f32>>, b: &Vec<Vec<f32>>, c: &Vec<Vec<f32>>) -> Vec<
     matmul2(&matmul2(a, b), c)
 }
 
-fn matmul1_benchmark(crit: &mut Criterion) {
-    let a = vec![
+fn matmul_benchmark(crit: &mut Criterion) {
+    let a1 = vec![
         vec![1.0, 2.0, 3.0],
         vec![4.0, 5.0, 6.0],
         vec![7.0, 8.0, 9.0],
     ];
-    let b = vec![
+    let b1 = vec![
         vec![9.0, 8.0, 7.0],
         vec![6.0, 5.0, 4.0],
         vec![3.0, 2.0, 1.0],
     ];
-    let c = vec![
+    let c1 = vec![
         vec![1.0, 0.0, 0.0],
         vec![0.0, 1.0, 0.0],
         vec![0.0, 0.0, 1.0],
     ];
-    crit.bench_function("matmul1", |bench| bench.iter(|| driver_code1(
-                black_box(a.clone()),
-                black_box(b.clone()),
-                black_box(c.clone())
+    let a2 = a1.clone();
+    let b2 = b1.clone();
+    let c2 = c1.clone();
+    let mut group = crit.benchmark_group("Call by");
+    group.bench_function("Value", |bench| bench.iter(|| driver_code1(
+                black_box(a1.clone()),
+                black_box(b1.clone()),
+                black_box(c1.clone())
     )));
-}
-fn matmul2_benchmark(crit: &mut Criterion) {
-    let a = vec![
-        vec![1.0, 2.0, 3.0],
-        vec![4.0, 5.0, 6.0],
-        vec![7.0, 8.0, 9.0],
-    ];
-    let b = vec![
-        vec![9.0, 8.0, 7.0],
-        vec![6.0, 5.0, 4.0],
-        vec![3.0, 2.0, 1.0],
-    ];
-    let c = vec![
-        vec![1.0, 0.0, 0.0],
-        vec![0.0, 1.0, 0.0],
-        vec![0.0, 0.0, 1.0],
-    ];
-    crit.bench_function("matmul2", |bench| bench.iter(|| driver_code2(
-                black_box(&a),
-                black_box(&b),
-                black_box(&c)
+    group.bench_function("Reference", |bench| bench.iter(|| driver_code2(
+                black_box(&a2),
+                black_box(&b2),
+                black_box(&c2)
     )));
 }
 
-criterion_group!(benches, matmul1_benchmark, matmul2_benchmark);
+criterion_group!(benches, matmul_benchmark);
 criterion_main!(benches);
 
