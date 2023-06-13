@@ -48,87 +48,222 @@
 \section{Introduction}
 
 \begin{frame}{Learning Objectives}
-  Auch m\"undlich: Aufbau des Vortrages, aus Anwendung eine Tour durch Tooling und state of the art
-\end{frame}
-
-\begin{frame}{Warning}
-  Never optimize too early. Steal from ref, maybe the gist?
-\end{frame}
-
-\begin{frame}{Why Rust is a good fit for HPC}
   \begin{itemize}
-    \item TODO unpolished
-    \item Wie modernes cpp vom Compiler erzwungen
-    \item RAII
-    \item smart\_ptr
-    \item Zudem viel fp, iterators, traits statt deep inheritance, immutable... etc
-    \item Sehr modern
-    \item Guter Paketmanager
-    \item Py/CPP-Interop
+    \item Why Rust is a good fit for HPC.
+    \item How to benchmark Rust code
+    \item How to detect hotspots in Rust
+    \item How to FINISH ME
   \end{itemize}
 \end{frame}
 
-\begin{frame}{Problem: Matrix multiplication}
-  TODO split Formula and visualisation
+% TODO FIX CITATIONS
+\begin{frame}{Why Rust is a good fit for HPC}
+  \begin{itemize}
+    \item Its like modern C++ enforced by the compiler
+      \begin{itemize}
+        \item RAII-based memory management
+        \item References are like \texttt{std::unique\_ptr}
+      \end{itemize}
+    \item Great Python / C++ interoperability
+    \item Allows for very low level control; even supports bare metal deployment.
+    \item Mature compiler optimizations through LLVM backend
+    \item Many modern concepts from functional programming
+      \begin{itemize}
+        \item immutability by default
+        \item Traits/typeclasses instead of inheritance
+        \item exhaustive pattern matching
+        \item Algebraic data types
+        \item No Nullability
+      \end{itemize}
+      \item Developers' most loved language for the 7th year according to StackOverflow \cite{sosurvey}
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Problem: Quadratic Matrix multiplication}
+  \begin{columns}
+    \begin{column}{0.5\textwidth}
+      Let $A, B \in \mathbb{R}^{n\times n}, n \in \mathbb{N}$. Then $C \in \mathbb{R}^{n \times n}$ is defined as
+      \[
+        C_{ij} := \sum_{k=1}^n A_{ik} \cdot B_{kj}
+      \]
+      i.e. $C_{ij}$ is the dot product of the $i$-th row of $A$ and the $j$-th column of $B$.
+    \end{column}
+    \begin{column}{0.5\textwidth}
+      \begin{figure}
+        \includegraphics[width=0.8\textwidth]{../assets/Matrix_multiplication_diagram_2.svg.png} \cite{matmulvis}
+      \end{figure}
+    \end{column}
+  \end{columns}
 \end{frame}
 
 \section{Simplified Problem}
 
-\begin{frame}{Simplified Problem: $3 \times 3$ Matrix}
-  \begin{itemize}
-    \item Mention that this slide is meant to introduce to the rust syntax
-    \item Erste Impl
-    \item Dann noch driver code $A \cdot B \cdot C$
-    \item Dann direkt vorschlagen (muendlich): ref vs val koennten wir ersetzen. Das ergibt naiv nen perf boost. Aber wie finden wir das heraus?
-  \end{itemize}
+\begin{frame}[fragile]{Simplified Problem: $3 \times 3$ Matrix}
+  \begin{tcolorbox}[title=First Implementation]
+    \footnotesize\inputminted[xleftmargin=1em,linenos]{rust}{../assets/first_impl.rs}
+  \end{tcolorbox}
 \end{frame}
+% TODO: MENTION THAT ONE COULD IMPROVE REF VS VAL here.
+% This could result in a performance boost
+% But how can we make sure about that?
 
 \begin{frame}{Microbenchmarking}
-  \begin{itemize}
-    \item cargo bench doof (+benchcmp)
-    \item criterion cool (+critcmp)
-    \item Maybe also show the code, but definitely show criterions features
-  \end{itemize}
+  \begin{block}{Native Benchmarking: \texttt{cargo bench} \cite{cargobench}}
+    \begin{itemize}
+      \item Not stable (nightly only)
+      \item No regression testing or visualizations
+      \item No clear roadmap to become stable \cite{cargounstable}
+      \item \texttt{cargo-benchcmp} \cite{benchcmp} for comparing benchmarks
+    \end{itemize}
+  \end{block}
+  \pause
+  \begin{block}{\texttt{criterion.rs} \cite{criterion}}
+    \begin{itemize}
+      \item Uses statistical analysis for regression significance
+      \item Blocks constant folding
+      \item HTML report with plotting through \texttt{gnuplot} \cite{gnuplot}
+      \item \texttt{cargo-critcmp} for comparing benchmarks \cite{critcmp}
+    \end{itemize}
+  \end{block}
 \end{frame}
 
 \begin{frame}{Benchmarking Full Applications}
-  \begin{itemize}
-    \item Hyperfine presentation
-  \end{itemize}
+  \begin{columns}
+    \begin{column}{0.5\textwidth}
+      \begin{block}{Hyperfine \cite{hyperfine}}
+        \begin{itemize}
+          \item Statistical analysis / outlier detection
+          \item Warmup runs
+          \item Cache clearing commands available
+          \item Export to different formats such as JSON or CSV
+          \item Supports parametrized benchmarks
+          \item Various Pythonscripts for visualization
+        \end{itemize}
+      \end{block}
+    \end{column}
+    \begin{column}{0.5\textwidth}
+      \includegraphics[width=\textwidth]{../assets/hyperfine.png} \cite{hyperfine}
+    \end{column}
+  \end{columns}
 \end{frame}
 
-\begin{frame}{Benchmarking Results}
-  Zeigt natuerlich improvement
+\begin{frame}{Benchmarking Results (-O3)}
+    \includegraphics[width=\textwidth]{../assets/first_violin.png}
+  \begin{columns}
+    \begin{column}{0.7\textwidth}
+  \begin{table}[h]
+\centering
+\begin{tabular}{|l|c|c|c|}
+\hline
+& \textbf{Mean} & \textbf{Std. Dev} & \textbf{Median} \\
+\hline
+\textbf{Call By Reference} & 202.31 ns & 3.5063 ns & 201.96 ns \\
+\hline
+\textbf{Call By Value} & 318.48 ns & 12.173 ns & 314.59 ns \\
+\hline
+\end{tabular}
+\end{table}
+    \end{column}
+    \begin{column}{0.3\textwidth}
+      Total Improvements:\\
+      Mean: 57.42\%\\
+      Median: 55.77\%
+    \end{column}
+  \end{columns}
 \end{frame}
 
-\begin{frame}{Next Improvement: Less Heap Allocation}
-  Hier einfach Code, Highlight die Veraenderung
+\begin{frame}[fragile]{Next Improvement: Static Stack Arrays}
+  \begin{tcolorbox}[title=Static Stack Arrays]
+    \footnotesize\inputminted[xleftmargin=1em,linenos]{rust}{../assets/less_heap_allocation.rs}
+  \end{tcolorbox}
+  \begin{columns}
+    \begin{column}{0.7\textwidth}
+  \begin{table}[h]
+    \centering
+    \begin{tabular}{|l|c|c|c|}
+      \hline
+      &\textbf{Mean} & \textbf{Std. Dev} & \textbf{Median}\\
+      \hline
+      \textbf{Call By Value} & 318.48 ns & 12.173 ns & 314.59 ns \\
+      \hline
+      \textbf{Static Arrays} & 8.0685 ns & 254.42 ps & 8.0121 ns\\
+      \hline
+      \end{tabular}
+  \end{table}
+    \end{column}
+    \begin{column}{0.3\textwidth}
+      Total Improvements:\\
+      Mean: 3847.2\%
+      Median: 3826.44\%\\
+    \end{column}
+  \end{columns}
 \end{frame}
 
 \begin{frame}{Next Improvement: 1 vs 2 derefs}
-  Hier einfach Code, Highlight die Veraenderung\\
-  Muendlich: Bei dem Spielproblem ist der Code so uebersichtlich dass wir noch den Assembler analysieren koennen
+  \begin{tcolorbox}[title=Reduce the amount of Dereferences]
+    \footnotesize\inputminted[xleftmargin=1em,linenos]{rust}{../assets/less_derefs.rs}
+  \end{tcolorbox}
+  \begin{columns}
+    \begin{column}{0.7\textwidth}
+  \begin{table}[h]
+    \centering
+    \begin{tabular}{|l|c|c|c|}
+      \hline
+      &\textbf{Mean} & \textbf{Std. Dev} & \textbf{Median}\\
+      \hline
+      \textbf{Call By Value} & 318.48 ns & 12.173 ns & 314.59 ns \\
+      \hline
+      \textbf{Less Derefs} & 7.7821 ns & 182.79 ps & 7.7775 ns \\
+      \hline
+      \end{tabular}
+  \end{table}
+    \end{column}
+    \begin{column}{0.3\textwidth}
+      % Note that this is the calculated increase
+      Total Improvements:\\
+      Mean: 3993.57\%\\
+      Median: 3944.87\%
+    \end{column}
+  \end{columns}
+\end{frame}
+% TODO Muendlich: Bei dem Spielproblem ist der Code so uebersichtlich dass wir noch den Assembler analysieren koennen
+
+\begin{frame}{Assembly 1: Compiler Explorer \cite{godbolt}}
+  \begin{figure}[h]
+    \includegraphics[width=\textwidth]{../assets/compilerexplorer.png}
+  \end{figure}
 \end{frame}
 
-\begin{frame}{Assembly 1: Compiler Explorer}
-  No points, just show a screenshot and explain that one can change compiler, flags and map the assembly
-\end{frame}
-
-\begin{frame}{Assembly 2: cargo-show-asm}
-  short slide
+\begin{frame}{Assembly 2: \texttt{cargo-show-asm} \cite{cargo-asm}}
+  \begin{columns}
+    \begin{column}{0.5\textwidth}
+      \begin{itemize}
+        \item Allows to view Assembly or LLVM-IR
+        \item Can query single functions
+        \item Can also resolve trait implementations
+      \end{itemize}
+    \end{column}
+    \begin{column}{0.5\textwidth}
+    \includegraphics[height=.9\textheight]{../assets/cargoasm.png}
+    \end{column}
+  \end{columns}
 \end{frame}
 
 \begin{frame}{Assembly 3: Loop Unrolling and Function Inlining}
   \begin{block}{Loop Unrolling}
     \begin{itemize}
-      \item Macht es automatisch in unserem Fall
-      \item Ansonsten gibt es dafuer auch eine Macro-Crate
+      \item Was already applied in our case
+      \item Tooling: \texttt{unroll} \cite{unroll} provides a macro for creating unrolled rust code.
+      \item For dynamic length loops: \texttt{-C llvm-args="-unroll-threshold=N"}
+        \begin{itemize}
+          \item Do not apply without benchmarking!
+        \end{itemize}
     \end{itemize}
   \end{block}
-  \begin{block}{Inlining}
+  \begin{block}{Function Inlining}
     \begin{itemize}
-      \item Macht es bei uns nicht
-      \item Es gibt aber compiler hints
+      \item Was not applied in our case
+      \item But compiler hints exist: \texttt{\#[inline(/always/never)]} \cite{perfbook}
     \end{itemize}
   \end{block}
 \end{frame}
@@ -137,80 +272,178 @@
 
 \begin{frame}{Introduction Real Problem}
   \begin{itemize}
-    \item Problemstellung: Dir wird ein wissenschaftliches Programm gegeben was zu langsam ist und optimiert werden soll
-    \item Woran liegt es?
-    \item Wie finde ich das heraus?
-    \item Loesung: Profiling.
+    \item \textbf{Task:} You get introduced to a scientific problem which is too slow.
+      \pause
+    \item Why is this so slow?
+      \pause
+    \item How do I figure this out?
+      \pause
+    \item \textbf{Solution: Profiling}
   \end{itemize}
 \end{frame}
 
 \begin{frame}{Profiling}
   \begin{itemize}
-    \item Da Rust binaries produziert, gehen alle Profiler:
+    \item Since Rust produces normal binaries, most profilers just work.
       \begin{itemize}
-        \item Namedropping: perf, cachegrind
-        \item rustfilt kann Symbole demanglen falls generisches Tool
+        \item Including:
+          \begin{itemize}
+            \item \texttt{perf} \cite{perfwiki}
+            \item \texttt{cachegrind} \cite{valgrind}
+            \item ...
+          \end{itemize}
+        \item \texttt{rustfilt} \cite{rustfilt} can demangle all symbols.
       \end{itemize}
-    \item Wir fokussieren uns hier auf 2 Tools, da diese Rustspezifisch sind:
-      \begin{itemize}
-        \item Cargo flamegraph
-        \item iai
-      \end{itemize}
+    \item Here, we will use \texttt{cargo-flamegraph} \cite{cargoflamegraph} and later \texttt{iai} \cite{iai}.
   \end{itemize}
 \end{frame}
 
 \begin{frame}{Cargo flamegraph}
+  \begin{columns}
+    \begin{column}{0.5\textwidth}
+    \includegraphics[height=.9\textheight]{../assets/flamegraph.png}
+    \end{column}
+    \begin{column}{0.5\textwidth}
   \begin{itemize}
-    \item Erwaehnen dass es perf+dtrace nutzt.
-    \item statistical Profiler
-    \item Angenommen auf unser Problem hat es zurueckgegeben: Es ist wieder Matrix multiplication
+    \item Statistical Profiler
+      \begin{itemize}
+        \item Interrupts randomly
+        \item Looks at the stack
+        \item Then it can approximate how much time is spent in each function
+      \end{itemize}
+    \item Uses \texttt{perf} internally
   \end{itemize}
+    \textbf{Our Result:} Lets assume the problem was a quadratic $n\times n$ matrix multiplication!\\
+    For the benchmarks, we assume $n=1024$.
+    \end{column}
+  \end{columns}
 \end{frame}
 
-\begin{frame}{The Code}
-  Hier den unoptimierten Code\\
-  Erwaehnen dass wir es fuer eine grosse Groesse (n=2048 oder so?) testen
+\begin{frame}[fragile]{Unoptimized code}
+  \begin{tcolorbox}[title=Unoptimized Version]
+    \footnotesize\inputminted[xleftmargin=1em,linenos]{rust}{../assets/01nxn.rs}
+  \end{tcolorbox}
 \end{frame}
 
-\begin{frame}{Applying our previous knowledge}
-  Optimized code\\
-  Also show the improvements!\\
-  Mention: Now lets get some further free wins
+\begin{frame}[fragile]{Applying our previous knowledge}
+  \begin{tcolorbox}[title=First optimized Version]
+    \footnotesize\inputminted[xleftmargin=1em,linenos]{rust}{../assets/02nxn.rs}
+  \end{tcolorbox}
+  % TODO: FIX VISUALISATION OF THE METRICS
 \end{frame}
+% mention that we wanna get more free wins
 
 \begin{frame}{Compiler Optimizations!}
   \begin{itemize}
-    \item Release build!
-    \item LTO LVVM
-    \item Native architecture
-    \item Code Units LLVM
-    \item PGO (out of scope, noch ziemlich frickelig, ansonsten gibts noch likely/unlikely)
-    \item Jeweils immer weitere improvements drunterballern in prozent und absolut
+    \item Using a Release build (\texttt{-O3})
+    \item LLVM Link Time Optimization (LTO)
+    \item Using the native Architecture
+    \item LLVM Single Code Unit
   \end{itemize}
-\end{frame}
-
-\begin{frame}{Tranpose Trick}
+  \pause
+  Out of scope:
   \begin{itemize}
-    \item Sollte was bringen da\dots
-    \item Jedoch $\Theta(n^2)$ precompute
-    \item Lohnt es sich?
-      \begin{itemize}
-        \item Ja, hier das Result
-      \end{itemize}
-    \item Frage 2: Verringert es die Cache Misses?
-      \begin{itemize}
-        \item Dafuer brauchen wir einen Profiler.
-      \end{itemize}
+    \item Profile Guided Optimization (PGO)
   \end{itemize}
 \end{frame}
 
-\begin{frame}{Iai}
+\begin{frame}{First Results}
+  \begin{table}[h]
+\centering
+\begin{tabular}{|l|c|c|c|c|}
+\hline
+  & \textbf{Mean} & \textbf{Std. Dev} & \textbf{Median} & \textbf{Mean Improvement}\\
+\hline
+  \textbf{Unoptimized} & $34.192s$ & $76.206ms$ & $34.177s$ & \\
+  \hline
+  \textbf{Optimized} & $11.875s$ & $96.287ms$ & $11.856s$ & $187.93$\%\\
+  \hline
+  \textbf{Compiler} &  $3.0426s$ & $13.525ms$ &  $3.0450s$ & 1023.78\%\\
+\hline
+\end{tabular}
+\end{table}
+\end{frame}
+
+\begin{frame}{First Results (cont.)}
+\centering
+    \includegraphics[height=.9\textheight]{../assets/ndim_first_bench.png}
+\end{frame}
+
+\begin{frame}{Cache-oblivious algorithms \cite{frigo}}
+  \begin{columns}
+    \begin{column}{0.5\textwidth}
+      Standard Matrix Multiplication $A \cdot B$
+      \begin{itemize}
+        \item Traverses $A$ row-major order
+        \item Traverses $B$ column-major order
+          \begin{itemize}
+            \item Every step of $B$ we get a cache miss
+          \end{itemize}
+        \item Solution: Transpose $B$
+        \item $C_{ij}$ becomes row $A_i$ times \textbf{row} $B_j$
+        \item Requires $\Theta(n^2)$ precompute.
+          \begin{itemize}
+            \item Does it improve speed?
+            \item Does it reduce cache misses?
+          \end{itemize}
+      \end{itemize}
+    \end{column}
+    \begin{column}{0.5\textwidth}
+      \includegraphics[height=0.9\textheight]{../assets/Row_and_column_major_order.svg.png}
+      \cite{cmglee}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{Cache-oblivious algorithms (cont.)}
+  \begin{columns}
+    \begin{column}{0.5\textwidth}
+      \begin{block}{Does it improve Speed?}
+        \begin{itemize}
+          \item Lets benchmark it:
+        \end{itemize}
+  \begin{table}[h]
+\begin{tabular}{|l|c|c|}
+\hline
+    & \textbf{Mean} & \textbf{Median}\\
+\hline
+    \textbf{Row-major} & $2.9668s$ & $2.9661 s$\\
+  \hline
+    \textbf{Col-major} & $2.1689 s$ & $2.1686 s$\\
+\hline
+\end{tabular}
+\end{table}
+      \end{block}
+    \end{column}
+    \begin{column}{0.5\textwidth}
+      \begin{block}{Does it reduce cache misses?}
+        \begin{itemize}
+          \item This is more complex
+          \item For this, we have to simulate the caches
+          \item This can be done using cachegrind \cite{valgrind}.
+        \end{itemize}
+      \end{block}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{Iai \cite{iai}}
+  \begin{columns}
+    \begin{column}{0.5\textwidth}
   \begin{itemize}
     \item Based on cachegrind
-    \item Emuliert
-    \item Sehr gut fuer CI
-    \item Result: Jup verbessert L1 caches
+    \item Emulating the CPU and its caches
+    \item Precise single-shot measurements
+    \item Main usecase in CI systems
   \end{itemize}
+    \end{column}
+    \begin{column}{0.5\textwidth}
+    \footnotesize\inputminted[xleftmargin=1em,linenos]{text}{../assets/iai.txt}
+      \begin{itemize}
+        \item Unclear, requires further investigation.
+      \end{itemize}
+    \end{column}
+  \end{columns}
 \end{frame}
 
 \section{Parallelism}
@@ -227,7 +460,7 @@
 \end{frame}
 
 \begin{frame}{MPI-rs}
-  \begin{titemize}
+  \begin{itemize}
     \item Standard MPI (laeuft auch auf lcuster)
     \item Mit anderen kompatibel (mit openmpi getestet)
     \item Erklaeren was es hat und nicht hat
