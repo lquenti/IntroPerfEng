@@ -55,6 +55,15 @@ fn matmul4(a: &[f32], _b: &[f32], c: &mut [f32], n: usize) {
     }
 }
 
+fn matmul5(a: &[f32], b: &[f32], result: &mut [f32], n: usize) {
+    result.iter_mut().enumerate().for_each(|(idx, res)| {
+        let i = idx / n;
+        let j = idx % n;
+        *res = (0..n).map(|k| a[i * n + k] * b[k * n + j]).sum();
+    });
+}
+
+
 
 fn iai_normal() {
     let n = 1024;
