@@ -66,14 +66,19 @@
 % TODO FIX CITATIONS
 \begin{frame}{Why Rust is a good fit for HPC}
   \begin{itemize}
+      \pause
     \item Its like modern C++ enforced by the compiler
       \begin{itemize}
         \item RAII-based memory management
         \item References are like \texttt{std::unique\_ptr}
       \end{itemize}
+      \pause
     \item Great Python / C++ interoperability
+      \pause
     \item Allows for very low level control; even supports bare metal deployment.
+      \pause
     \item Mature compiler optimizations through LLVM backend
+      \pause
     \item Many modern concepts from functional programming
       \begin{itemize}
         \item immutability by default
@@ -82,6 +87,7 @@
         \item Algebraic data types
         \item No Nullability
       \end{itemize}
+      \pause
       \item Developers' most loved language for the 7th year according to StackOverflow \cite{sosurvey}
   \end{itemize}
 \end{frame}
@@ -267,6 +273,7 @@
         \end{itemize}
     \end{itemize}
   \end{block}
+      \pause
   \begin{block}{Function Inlining}
     \begin{itemize}
       \item Was not applied in our case
@@ -301,6 +308,7 @@
           \end{itemize}
         \item \texttt{rustfilt} \cite{rustfilt} can demangle all symbols.
       \end{itemize}
+      \pause
     \item Here, we will use \texttt{cargo-flamegraph} \cite{cargoflamegraph} and later \texttt{iai} \cite{iai}.
   \end{itemize}
 \end{frame}
@@ -349,7 +357,6 @@
     \item Using the native Architecture
     \item LLVM Single Code Unit
   \end{itemize}
-  \pause
   Out of scope:
   \begin{itemize}
     \item Profile Guided Optimization (PGO)
@@ -429,6 +436,7 @@
 \end{table}
       \end{block}
     \end{column}
+    \pause
     \begin{column}{0.5\textwidth}
       \begin{block}{Does it reduce cache misses?}
         \begin{itemize}
@@ -451,6 +459,7 @@
     \item Main usecase in CI systems
   \end{itemize}
     \end{column}
+    \pause
     \begin{column}{0.5\textwidth}
     \footnotesize\inputminted[xleftmargin=1em,linenos]{text}{../assets/iai.txt}
       \begin{itemize}
@@ -480,6 +489,7 @@
         \end{itemize}
       \end{block}
     \end{column}
+    \pause
     \begin{column}{0.5\textwidth}
       \begin{block}{Portable SIMD}
         \begin{itemize}
@@ -553,7 +563,9 @@
         \item Perf linter clippy
         \item Type sizes
       \end{itemize}
+      \pause
     \item Algorithmica: Algorithms for Modern Hardware \cite{algorithmica}
+      \pause
     \item rsmpi \cite{mpi}
       \begin{itemize}
         \item Pure Rust implementation
@@ -571,8 +583,11 @@
 \label{pg:lastpage} % Label on last frame to get the page number for footer
   \begin{itemize}
     \item Rust is viable for HPC, although still experimental
+      \pause
     \item There are many flags for compiler tuning
+      \pause
     \item The following tools are available for HPC:
+      \pause
   \end{itemize}
   \begin{table}[h]
 \centering
@@ -600,6 +615,11 @@
       \hline
     \end{tabular}
   \end{table}
+\end{frame}
+
+\begin{frame}[allowframebreaks]{References}
+\renewcommand*{\bibfont}{\normalfont\scriptsize}
+\printbibliography
 \end{frame}
 
 \end{document}
