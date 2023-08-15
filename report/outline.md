@@ -282,7 +282,62 @@ Chapter 3: Variadic Size Matrix Multiplication
         - again: Analyzing that is beyond the scope and doesnt help explaining the concepts, thus exercise for the reader
 ---
 Chapter 4: A glimpse of (Inter-Node) Parallelism
-- Lastly, 
-
+- Lastly, we are showing 2 kinds of inter-node parallism
+    - Single thread parallelism using SIMD instructions
+    - Multi threading using Rayon
+- SIMD
+    - TODO explain SIMD
+    - part of rust core library
+    - two different APIs: The old, processor specific API and the new portable SIMD API
+    - Old API
+        - Experimental only: unsafe code
+        - Low level platform specific structs
+        - direct intrinsics translation
+        - show how the functions look the same, see slide
+        - Part of `core`: Doesn't require any allocator or OS features existing
+    - Portable SIMD
+        - Experimental only, SAFE
+        - Generalized on bit width level
+            - `std::simd::{f32x8, f64x4, i32x8}`
+        - In order to not crash: Conditional compilation with
+            - `#[cfg(target_arch="x86_64")]`
+            - `#[cfg(target_feature="aes")]`
+        - On runtime: Conditional execution with `std::is_x86_feature_detected`
+        - If not checked: undefinied behvaiour
+        - Part of `std`: Expects a global memory allocator as well as an operating system.
+- Multithreading
+    - Rust supports many ways of multi threading
+        - Primitives using the standard libary
+            - See the book for More
+                - <https://doc.rust-lang.org/book/ch16-00-concurrency.html>
+        - Furthermore, `async/await` for managing async I/O
+            - In order to enable the usage in many different environments (such as IoT), rust requires the developer to bring their own async runtime
+            - The most common one is tokio
+            - Other examples are `smol` as a simpler solution or `fuchsia-async` used in Googles Fuchsia OS>
+            - For more on Rust Async I/O, see
+                - "Asynchronous Programming in Rust"
+                    - <https://rust-lang.github.io/async-book/01_getting_started/01_chapter.html#getting-started>
+                - fasterthanlimes "Understanding Rust futures by going way too deep"
+                    - <https://fasterthanli.me/articles/understanding-rust-futures-by-going-way-too-deep>
+                - WithoutBoats "Zero-Cost Async IO" talk at RustLatam 2019
+                    - <https://www.youtube.com/watch?v=skos4B5x7qE>
+        - Lastly, there are many utility libraries. 
+            - Here, we will focus on `rayon`
+    - Rayon
+        - Rayon is a High-Level Parallelism Library, using dynamically sized thread pools
+        - It gurantees **data-race freedom** by only allowing one thread to write
+        - Its main features are: Parallel Iterators
+            - Just replace `.iter()` with `.par_iter()`
+            - Same functionality as sequential **if** the iterator has no side effects
+            - Support for common high level functions such as
+                - `.map(), .filter(), .reduce()...`
+                - By implementing the iterator trait
+            - Low level primitives such as `join()` enabling the `fork-join` model
+                - `.join(|| a(), || b())`
+                - **May** run in parallel based on whether idle cores are available
+        - Example:
+            - Show code
+            - When writing it more functional...
+            - one can only replace the `iter_mut()` by `.par_iter_mut()`
 ---
 Chapter 5: Conclusion
