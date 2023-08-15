@@ -1,5 +1,8 @@
 # NTHPDA Rust for HPC Applications
 
+## TODO
+- [ ] ref the repo in the pdf
+
 ## Structure Slides
 
 - Motivation:
@@ -18,16 +21,6 @@
                 - somit immer mehr Matmuls
                 - explizites Beispiel: Wie viele finden bei einer inference statt
                 - paper raussuchen
-    - Learning Objectives
-        - Why Rust is a good fit for HPC
-        - How to do the following things in Rust
-            - Microbenchmarking
-            - Full Application Benchmarking
-            - Analyze generated Assembly
-            - Use Compiler Optimizations
-            - Do Statistical Profiling
-            - Benchmark in a CI or other noisy environment
-            - Intra-Node parallelism
 - Introduction Rust:
     - Rust
         - Initially released by Mozilla Research in 2015
@@ -71,7 +64,9 @@
             - Exhaustive pattern matching, resulting in no implicitly unhandled cases
             - AGTs, allowing for easier pattern matching with enumerable sum types
             - No Nullability
-                - TODO no explicit, mention billion dollar mistake and a bit of theory
+                - Instead Option, Result that must be handled and can't be ignoed
+                - billion dollar mistake tony hoare
+                    - <https://www.infoq.com/presentations/Null-References-The-Billion-Dollar-Mistake-Tony-Hoare/>
         - Developers most loved language for the 7th year according to Stackoverflow
 - Formal Introduction of Matrix Multiplication
     - Take Formula from wikipedia
@@ -80,16 +75,143 @@
 - Structure
     - Chapter 2
         - Simplified Version: Fixed size matmul
-        - Where the focus will be on ...
+        - Where the focus will be on
+            - Microbenchmarking
+            - Full Application Benchmarking
+            - Assembly Analysis
+            - Loop unrolling and function inlining
     - Chapter 3
         - Variadic size matrix multiplication
-        - Where the focus will be on ...
+        - Where the focus will be on
+            - Profiling
+            - Compiler Optimizations
+            - Cache Oblivious Algorithms
+            - Benchmarking in noisy environments
     - Chapter 4
         - Introduction to Parallelism
-        - Where the focus will be on ...
+        - Where the focus will be on
+            - SIMD
+            - Multithreading using `rayon`
     - Chapter 5
         - Conclusion
             - Providing an overview of all shown tools
             - Providing further ressources
 ---
 Chapter 2: Fixed Size 3x3 mat
+- Naive implementation
+    - Show implementation
+    - This is call by value
+    - Intuitively, this could be improved by using call-by-reference
+    - But it is always better to measure than to just guess
+    - Therefore, we have to do some Benchmarking. We can do
+        - either Microbenchmarking
+        - or Full Application Benchmarking
+- Microbenchmarking
+    - Is the performance evaulation of small isolated functions
+    - We will look at two solutions
+    1. Native Benchmarking: `cargo bench`
+        - Not stable, nightly only
+        - No integrated regression testing or visualizations
+        - No clear roadmap to become stable
+            - cite see slide
+        - `cargo-benchcmp` for comparing benchmarks
+    2. The canonical benchmarking library: `criterion.rs`
+        - based on haskells criterion
+        - Uses statistical analysis for regression significance
+        - Blocks constant folding using `criterion::black_box`
+            - "A function that is opaque to the optimizer, used to prevent the compiler from optimizing away computations in a benchmark."
+                - <https://docs.rs/criterion/latest/criterion/fn.black_box.html>
+        - HTML reports with plotting through `gnuplot`
+        - `cargo-critcmp` for comparing benchmarks
+- Full Application Benchmarking
+    - Hyperfine
+        - Also allows for statistical analysis and outlier detection
+        - Supports warmup runs for things such as page cache preparation
+        - Can run commands inbetween runs to clear cache: 
+            - Example: `echo 1 > /proc/sys/vm/drop_caches` which
+                - frees the page cache
+                - <https://www.kernel.org/doc/Documentation/sysctl/vm.txt>
+        - Supports exports to formats such as JSON or CSV for further analysis
+        - Supports parametrized benchmarks
+        - Repo contains various python scripts for visualization
+            - <https://github.com/sharkdp/hyperfine/tree/master/scripts>
+- Performance Optimization
+    - Call by Reference
+        - Add code as ref in appendix
+        - mention that it improved performance by n%
+            - full table in appendix
+            - redo the benchmarks
+        - Transition:
+            - We used dynamically sized heap vectors, we know the length
+    - Primitive Stack Arrays
+        - We first used `std::vec`
+            - heap allocated
+            - dynamically sized
+            - runtime bound checks everywhere
+        - Instead, we can just specify that we want a ref to a continuous memory segment of proper size
+            - show `&[[f32; 3]; 3]`
+        - add code as ref in appendic
+        - mention that it improved by n%
+            - full table in appendix
+        - possible explainations:
+            - A lot of non-zero cost work initializing the complex vec struct
+            - heap allocations
+            - more conditional checks
+                - explicitly bounds checking
+                    - See the rust bounds check cookbook
+                        - <https://github.com/Shnatsel/bounds-check-cookbook/>
+            - Footnote:
+                - Further analysis can be done through statistical profiling
+                - explained later
+                - as it doesn't help explaining perf eng concepts, it is left as an exercise to the reader
+    - Reduce pointer chasing
+        - Instead of 3 arrays of length 3, one could use a single array of length 9
+        - this would half the number of dereferences
+        - add code as ref in appendic
+        - mention that it improved by n%
+            - full table in appendix
+    - Transition: This code is small enough that one could still analyze the assembly for further optimization
+- Assembly Optimizations
+    - How Assembly can be analyzed
+        - Compiler Explorer
+            - Online development environment
+            - Started in 2012 for optimizing quantitative analysis algorithms
+            - Supports
+                - Over 30 Languages such as C/C++/Rust, but also Java/Python/Haskell
+                - Supports customized compiler arguments (for example comparing `-O3` and `-Osize`)
+                - Different compilers and versions for the same languages (i.e. `gcc` or `clang` for C)
+            - Can be used either hosted or on-prem
+            - Great UX, color codes the lines to map code to assembly
+            - best fit for small programs as it can only handle a single file
+        - `cargo-show-asm`
+            - More minimalist, less polished CLI tool
+            - Can work with any rust codebase, no matter the size or dependencies
+            - Allows to view Assembly or LLVM-IR
+            - Can query single functions
+                - Can also resolve trait implementations
+                    - which are roughly the equivalent of interface implementations in OOP
+    - Loop Unrolling
+        - Explaination:
+            - If you know how often the loop runs, just replicate the assembly that many times
+                - Pro:
+                    - Reduces comparisons and jumps
+                    - Easier pipelining; no need for path prediction (which can be wrong)
+                - Contra:
+                    - increases binary size
+        - Was already applied in our case
+        - Tooling: `unroll` provides a macro for creating unrolled rust code using the preprocessor
+            - As it literally just duplicates the rust code, it does not work for dynamic length loops (although they can be deduced at compile time)
+        - For those: `-C llvm-args=-unroll-threshold=N`
+            - Do not apply without benchmarking, as it can consume too much of the CPU instruction cache.
+    - Function Inlining
+        - Explaination:
+            - Instead of jumping into a subroutine, and then back, it places the assembly of the subroutine into the outer function
+                - Pro:
+                    - Eliminates call overhead (moving arguments into registers)
+                        - How much call overhead is based on the calling convention used
+                            - Rust has no specified default calling convention
+                - Contra:
+                    - Increases binary size through code duplication
+                    - Maybe worse performance through worse CPU instruction cache utilization
+        - Was not applied in our case
+        - But compiler hints exist: `#[inline(/always/never)]`
