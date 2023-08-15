@@ -341,3 +341,12 @@ Chapter 4: A glimpse of (Inter-Node) Parallelism
             - one can only replace the `iter_mut()` by `.par_iter_mut()`
 ---
 Chapter 5: Conclusion
+- Overview blabla
+    - Rust is viable for HPC, although many parts are still experimental
+    - There are many possibilities for optimizing Rust code
+        - Never blindly optimize without benchmarking
+- Overview of all Tools
+    - show table
+- Further ressources
+    - Besides the ressources mentioned
+        - see the slide
