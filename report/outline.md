@@ -1,0 +1,95 @@
+# NTHPDA Rust for HPC Applications
+
+## Structure Slides
+
+- Motivation:
+    - What can you do about this topic
+        - Last year somebody did a taxonomy of Rust HPC projects
+        - Instead, I show how to actually do highly performant computing in Rust
+            - Problem based learning
+                - One learns techniques when they are relevant and useful, just in time
+        - Problem based learning is difficult. The example has to be
+            - Small enough to fit in the scope of a report
+            - Complex enough to surface most of the concepts used in actual performance engineering
+            - interesting enough to keep readers engaged in the topic
+        - Motivate Matrix Multiplication
+            - The core of all ML
+                - DL wird immer groesser
+                - somit immer mehr Matmuls
+                - explizites Beispiel: Wie viele finden bei einer inference statt
+                - paper raussuchen
+    - Learning Objectives
+        - Why Rust is a good fit for HPC
+        - How to do the following things in Rust
+            - Microbenchmarking
+            - Full Application Benchmarking
+            - Analyze generated Assembly
+            - Use Compiler Optimizations
+            - Do Statistical Profiling
+            - Benchmark in a CI or other noisy environment
+            - Intra-Node parallelism
+- Introduction Rust:
+    - Rust
+        - Initially released by Mozilla Research in 2015
+        - Designed as a Memory Safe System Language as an Alternative for C++ in Servo
+            - Servo is the web rendering engine used in Firefox
+            - How based unsafe memory is 
+                - <https://alexgaynor.net/2020/may/27/science-on-memory-unsafety-and-security/>
+                - cite subthings
+            - Even Chromium uses it it now
+                - <https://security.googleblog.com/2023/01/supporting-use-of-rust-in-chromium.html>
+        - Adopted by many big tech firms such as
+            - Amazon
+                - <https://aws.amazon.com/de/blogs/opensource/why-aws-loves-rust-and-how-wed-like-to-help/>
+            - Google
+                - <https://google.github.io/comprehensive-rust/>
+            - Meta
+                - <https://engineering.fb.com/2022/07/27/developer-tools/programming-languages-endorsed-for-server-side-use-at-meta/>
+            - Microsoft
+                - <https://www.zdnet.de/88403712/microsoft-distanziert-sich-von-c-und-c/>
+        - In december 2022, it became the first language other than C and Assembly supported for Linux kernel development
+    - Why Rust is a good fit for HPC
+        - Its like modern C++ enforced by the Compiler
+            - RAII-based memory management
+            - References are like `std::unique_ptr`
+        - Great Python/C++ interoperability
+            - Search out the Libraries
+        - Allows for very low level control; even supports bare mental deployment
+            - Low Level
+                - No Garbage Collection
+                - Custom Memory Allocators
+                - Raw Pointer Arithmetic in unsafe code
+                - Platform specific code with conditional compilation
+            - bare metal:
+                - explain the structure of core alloc std
+                - do some more research
+        - Mature compiler optimizations through LLVM backend
+            - Explain how the FE -> IR -> BE -> Assembly works
+        - Many modern concepts from functional programming
+            - Immutability by default
+            - Flat Traits/typeclasses instead of deep inheritance
+            - Exhaustive pattern matching, resulting in no implicitly unhandled cases
+            - AGTs, allowing for easier pattern matching with enumerable sum types
+            - No Nullability
+                - TODO no explicit, mention billion dollar mistake and a bit of theory
+        - Developers most loved language for the 7th year according to Stackoverflow
+- Formal Introduction of Matrix Multiplication
+    - Take Formula from wikipedia
+    - picture from slide
+    - mention the dot product fun fact
+- Structure
+    - Chapter 2
+        - Simplified Version: Fixed size matmul
+        - Where the focus will be on ...
+    - Chapter 3
+        - Variadic size matrix multiplication
+        - Where the focus will be on ...
+    - Chapter 4
+        - Introduction to Parallelism
+        - Where the focus will be on ...
+    - Chapter 5
+        - Conclusion
+            - Providing an overview of all shown tools
+            - Providing further ressources
+---
+Chapter 2: Fixed Size 3x3 mat
