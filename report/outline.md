@@ -150,7 +150,7 @@ Chapter 2: Fixed Size 3x3 mat
             - runtime bound checks everywhere
         - Instead, we can just specify that we want a ref to a continuous memory segment of proper size
             - show `&[[f32; 3]; 3]`
-        - add code as ref in appendic
+        - add code full
         - mention that it improved by n%
             - full table in appendix
         - possible explainations:
@@ -167,7 +167,7 @@ Chapter 2: Fixed Size 3x3 mat
     - Reduce pointer chasing
         - Instead of 3 arrays of length 3, one could use a single array of length 9
         - this would half the number of dereferences
-        - add code as ref in appendic
+        - add code full
         - mention that it improved by n%
             - full table in appendix
     - Transition: This code is small enough that one could still analyze the assembly for further optimization
@@ -215,3 +215,74 @@ Chapter 2: Fixed Size 3x3 mat
                     - Maybe worse performance through worse CPU instruction cache utilization
         - Was not applied in our case
         - But compiler hints exist: `#[inline(/always/never)]`
+---
+Chapter 3: Variadic Size Matrix Multiplication
+- Lets say, you get the following task:
+    - "bla bla here is a deep learning framework that runs too slow, please optimize xoxo"
+    - Now the questions are
+        - "Why is it so slow"
+        - "How does one figure this out?"
+    - Solution: Profiling
+- Profiling:
+    - cite <https://nnethercote.github.io/perf-book/profiling.html> for enumeration
+    - Profiling is used to find out which parts of the program are executed frequently enough to affect runtime
+    - Since Rust produces normal binaries, most profilers just work
+        - Including `perf` and `cachegrind`
+    - Since Rust allows for polymorphism, the name mangling occurs. If the profiler doesn't support unmangling natively, `rustfilt` can be used instead
+    - In this chapter, both `cargo-flamegraph` and `iai` will be represented
+- Cargo flamegraph:
+    - Statistical profiler
+        - interrupts randomly
+        - looks at the stack
+        - then, using a monte carlo approach, it can approximate how much time is spent in each function
+    - Uses `perf` and `dtrace` internally
+    - Result: It is a slow `nxn` matrix multiplication! For the benchmarks, we assume `n=1024`.
+- Show unoptimized code
+- We can apply our knowledge from the previous chapter
+    - Show optimized code
+- Before measuring, lets also tweak the whole project
+- Compiler Optimizations:
+    - Biggest Point: Use a release build (i.e. `-O3`)
+        - This enables general optimization as well as vectorization
+    - Enable LLVM link time optimization
+        - further intermodular optimizations done during the link stage
+            - Pro: Possible performance increasements
+            - Contra: More compile time
+    - Compiling for the native architecture
+        - This allows to use more specialized instructions that are not available on every processor such as bigger vector registers for SIMD.
+    - Using a single LLVM Codegen unit
+        - This means to fully compile the whole program every time (excluding its dependencies)
+            - Pro: More possibility to do global compiler optimizations
+            - Contra: More compile time
+    - Lastly, Profile Guided Optimization (PGO) was used. This is out of the scope for this project, see LINK for a great introduction on how the compiler team used it on `rustc` themselves.
+        - <https://blog.rust-lang.org/inside-rust/2020/11/11/exploring-pgo-for-the-rust-compiler.html>
+- Results table, graphs
+- Cache-oblivious algorithms
+    - use pic from slide
+    - Standard Matrix Multiplication `A \cdot B`
+        - A traverses row-major order
+        - B traverses column-major order
+            - Every step of B we get a cache miss
+        - Solution: Transpose B
+        - `C_{ij}` becomes row `A_i` times **row** `B_j`
+        - Requires `\Theta(n^2)` precompute
+    - Two questions:
+        1. Does it improve speed?
+            - Just benchmark it.
+            - Yes, by n% (mean/median)
+        2. Does it reduce cache misses?
+            - For that, we can use `iai`, which is also very useful to benchmark in noisy environments
+- `Iai`
+    - `iai` is a high-precision, one-shot benchmark framework for Rust code.
+    - This means that the code is run only a single time
+    - It uses Cachegrind to simulate emulate the CPU and its caches
+    - Thus, it is not affected by the noisy-neighbour problem facing traditional CI benchmarks
+    - Show results
+    - ALthrough it somehow has worse RAM, better L1 and L2
+        - again: Analyzing that is beyond the scope and doesnt help explaining the concepts, thus exercise for the reader
+---
+Chapter 4: A glimpse of (Inter-Node) Parallelism
+- Lastly, 
+
+---
+Chapter 5: Conclusion
