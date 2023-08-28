@@ -1,103 +1,75 @@
 \section{Introduction}
 \subsection{Motivation}
-%- Motivation:
-%    - What can you do about this topic
-%        - Last year somebody did a taxonomy of Rust HPC projects
-%        - Instead, I show how to actually do highly performant computing in Rust
-%            - Problem based learning
-%                - One learns techniques when they are relevant and useful, just in time
-%        - Problem based learning is difficult. The example has to be
-%            - Small enough to fit in the scope of a report
-%            - Complex enough to surface most of the concepts used in actual performance engineering
-%            - interesting enough to keep readers engaged in the topic
-%        - Motivate Matrix Multiplication
-%            - The core of all ML
-%                - DL wird immer groesser
-%                - somit immer mehr Matmuls
-%                - explizites Beispiel: Wie viele finden bei einer inference statt
-%                - paper raussuchen
+From a programming language perspective, \ac{HPC} is dominated by code written C, C++ or Fortran as these provide the low level control and optimization capablilites common in tightly-optimized code. However, as Rust was initially designed as a modern, memory-safe C++ replacement, it could be a valid choice for any kind of performance-critical code.\\
+
+Instead of just providing yet another taxonomy of successful \ac{HPC} projects in Rust, this report will rather provide an introduction to the topic on performance engineering in Rust, implicitly covering the current state of the ecosystem while providing an short explaination of each of the common concepts. Instead of just providing an enumeration of techniques, it rather uses \ac{PBL} to introduce the techniques just-in-time when they are relevant, providing a more coherent learning progression.\\
+
+\acl{PBL} can be difficult. The problem has to be
+\begin{itemize}
+  \item Small enough to fit the scope of a report
+  \item Complex enough to cover most of the concepts of real-life performance engineering
+  \item Interesting enough to keep readers engaged in the topic
+\end{itemize}
+
+For this report, we decided to analyze matrix multiplications. More than just a toy-problem, the matrix multiplication is at the core of all deep learning frameworks. As the parameter count steadily increases into the trillions \cite{gpt4}, fast matrix multiplications become evermore important for todays frameworks.
+
 \subsection{Rust}
-%- Introduction Rust:
-%    - Rust
-%        - Initially released by Mozilla Research in 2015
-%        - Designed as a Memory Safe System Language as an Alternative for C++ in Servo
-%            - Servo is the web rendering engine used in Firefox
-%            - How based unsafe memory is
-%                - <https://alexgaynor.net/2020/may/27/science-on-memory-unsafety-and-security/>
-%                - cite subthings
-%            - Even Chromium uses it it now
-%                - <https://security.googleblog.com/2023/01/supporting-use-of-rust-in-chromium.html>
-%        - Adopted by many big tech firms such as
-%            - Amazon
-%                - <https://aws.amazon.com/de/blogs/opensource/why-aws-loves-rust-and-how-wed-like-to-help/>
-%            - Google
-%                - <https://google.github.io/comprehensive-rust/>
-%            - Meta
-%                - <https://engineering.fb.com/2022/07/27/developer-tools/programming-languages-endorsed-for-server-side-use-at-meta/>
-%            - Microsoft
-%                - <https://www.zdnet.de/88403712/microsoft-distanziert-sich-von-c-und-c/>
-%        - In december 2022, it became the first language other than C and Assembly supported for Linux kernel development
+Rust \cite{rust} is a systems programming language initially released by Mozilla Research in 2015. It was designed as a memory safe alternative for C++ in Servo \cite{servo}, which is the web rendering engine used in Firefox. Rusts main goal is to provide memory safety while having an on-par performance with other systems languages such as C or C++.\\
+
+Having memory safety is paramount, as most security issues in traditional C/C++ codebases are a result of using a memory-unsafe language. To quote the overview by Alex Gaynor \cite{gaynor}
+
+
+\begin{itemize}
+  \item Android \cite{androidmem}: "Our data shows that issues like use-after-free, double-free, and heap buffer overflows generally constitute more than \textit{65\%} of High \& Critical security bugs in Chrome and Android."
+  \item Android’s bluetooth and media components \cite{androidmem2}: "Use-after-free (UAF), integer overflows, and out of bounds (OOB) reads/writes comprise \textit{90\%} of vulnerabilities with OOB being the most common."
+  \item iOS and macOS \cite{iosmem}: "Across the entirety of iOS 12 Apple has fixed 261 CVEs, 173 of which were memory unsafety. That’s \textit{66.3\%} of all vulnerabilities." and "Across the entirety of Mojave Apple has fixed 298 CVEs, 213 of which were memory unsafety. That’s \textit{71.5\%} of all vulnerabilities."
+  \item Chrome \cite{chromemem}: "The Chromium project finds that around \textit{70\%} of our serious security bugs are memory safety problems."
+  \item Microsoft \cite{microsoftmem}: \textit{"$\sim$70\%} of the vulnerabilities Microsoft assigns a CVE each year continue to be memory safety issues"
+  \item Firefox’s CSS subsystem \cite{ffmem}: "If we’d had a time machine and could have written this component in Rust from the start, 51 (\textit{73.9\%}) of these bugs would not have been possible."
+  \item Ubuntu’s Linux kernel \cite{ubumem}: "\textit{65\%} of CVEs behind the last six months of Ubuntu security updates to the Linux kernel have been memory unsafety."
+\end{itemize}
+
+Furthermore, it is now adapted by many big tech firms such as Amazon \cite{awsrust}, Google \cite{googlerust}, Meta \cite{metarust}, and Microsoft \cite{msftrust}. Lastly, in december 2022, it became the first language other than C and Assembly supported for Linux kernel development \cite{linuxrust}.
+
 \subsubsection{Why Rust is a good fit for HPC}
-%    - Why Rust is a good fit for HPC
-%        - Its like modern C++ enforced by the Compiler
-%            - RAII-based memory management
-%            - References are like `std::unique_ptr`
-%        - Great Python/C++ interoperability
-%            - Search out the Libraries
-%        - Allows for very low level control; even supports bare mental deployment
-%            - Low Level
-%                - No Garbage Collection
-%                - Custom Memory Allocators
-%                - Raw Pointer Arithmetic in unsafe code
-%                - Platform specific code with conditional compilation
-%            - bare metal:
-%                - explain the structure of core alloc std
-%                - do some more research
-%        - Mature compiler optimizations through LLVM backend
-%            - Explain how the FE -> IR -> BE -> Assembly works
-%        - Many modern concepts from functional programming
-%            - Immutability by default
-%            - Flat Traits/typeclasses instead of deep inheritance
-%            - Exhaustive pattern matching, resulting in no implicitly unhandled cases
-%            - AGTs, allowing for easier pattern matching with enumerable sum types
-%            - No Nullability
-%                - Instead Option, Result that must be handled and can't be ignoed
-%                - billion dollar mistake tony hoare
-%                    - <https://www.infoq.com/presentations/Null-References-The-Billion-Dollar-Mistake-Tony-Hoare/>
-%        - Developers most loved language for the 7th year according to Stackoverflow
+Basically, one can think of Rust as a modern dialect of C++ enforced by the compiler. It uses \ac{RAII} internally to ensure memory safety, while references are roughly equivalent to \texttt{std::unique\_ptr}.\\
+
+Especially relevant is the great interoperability with other languages. It supports easy integration with C++ using \texttt{bindgen} \cite{bindgen}, which is developed by the Rust core team. Rust also allows for easy embedding into Python code using \texttt{PyO3} \cite{pyo3}, allowing for high-performant native extensions.\\
+
+Furthermore, it allows for very low level control, even to the extend of bare metal deployment support. Due to Rusts aforementioned \ac{RAII}-alike memory management model, the runtime has no need for a garbage collector. One can even bring their own memory allocator and do raw pointer arithmetic if required. Lastly, Rust supports architecture based conditional compilation which makes it possible to write fast programs leveraging modern CPU instructions while providing portable alternatives. To support bare metal, OS-less development, Rust's standard library is split into 3 tiers:
+
+\begin{itemize}
+  \item \texttt{core}: The \texttt{core} library provides essential types and functionality that do not require heap memory allocation.
+  \item \texttt{alloc}: The \texttt{alloc} library builds upon the \texttt{core} library but expects heap-allocations, thus supporting things such as dynamically sized vectors.
+  \item \texttt{std}: The \texttt{std} library is the highest-level tier, requiring not only a memory allocator but also several OS capablilites such as I/O management.
+\end{itemize}
+
+Although Rust itself is a relatively new language, its compiler supports most modern compiler optimizations. This is possible through \ac{LLVM}. Instead of producing native assembly for all architectures, the compiler just provides a \ac{LLVM} frontend generating \ac{LLVM} \ac{IR} which then gets translated to native code by \ac{LLVM}.\\
+
+Lastly, it supports many modern functional concepts such as immutability by default, flat traits instead of deep inheritance, exhaustive pattern matching with \acp{ADT} sum types as well as providing alternatives to nullability, which is commonly known as the billion dollar mistake \cite{null}. Its language design is in fact so popular that according to the yearly StackOverflow surveys it was voted as the most loved language for the 7th year in the row \cite{sosurvey}.
+
 \subsection{Quadratic Matrix Multiplication}
-%- Formal Introduction of Matrix Multiplication
-%    - Take Formula from wikipedia
-%    - picture from slide
-%    - mention the dot product fun fact
+
+Let $A, B \in \mathbb{R}^{n\times n}, n \in \mathbb{N}$. Then $C \in \mathbb{R}^{n \times n}$ is defined as
+\[
+  C_{ij} := \sum_{k=1}^n A_{ik} \cdot B_{kj}.
+\]
+$C_{ij}$ is the dot product of the $i$-th row of $A$ and the $j$-th column of $B$.
+
 \subsection{Structure}
-%- Structure
-%    - Chapter 2
-%        - Simplified Version: Fixed size matmul
-%        - Where the focus will be on
-%            - Microbenchmarking
-%            - Full Application Benchmarking
-%            - Assembly Analysis
-%            - Loop unrolling and function inlining
-%    - Chapter 3
-%        - Variadic size matrix multiplication
-%        - Where the focus will be on
-%            - Profiling
-%            - Compiler Optimizations
-%            - Cache Oblivious Algorithms
-%            - Benchmarking in noisy environments
-%    - Chapter 4
-%        - Introduction to Parallelism
-%        - Where the focus will be on
-%            - SIMD
-%            - Multithreading using `rayon`
-%    - Chapter 5
-%        - Conclusion
-%            - Providing an overview of all shown tools
-%            - Providing further ressources
+This report is structured as follows: Section 2 will explore a simplified version of the matrix multiplication problem where the dimension is fixed. Here, the focus will be set on microbenchmarking, full application benchmarking, and assembly analysis. Section 3 will then explore the full matrix multiplication, exploring the topics of profiling, compiler optimizations, cache oblivious as well as how to benchmark in noisy environments. Section 4 will provide a short introduction of parallelism. Lastly, section 5 concludes this report by providing an overview of all shown tools as well as further ressources.
 
 \section{Fixed Size Matrix Multiplication}
-%Chapter 2: Fixed Size 3x3 mat
+To start off with a simplified problem, this section focuses on a fixed quadratic matrix size of $n=3$. Using the mathematical definition, this can be trivially implemented:
+
+\begin{listing}[th]
+  \inputminted{rust}{./assets/first_impl.rs}
+\caption{Naive implementation of a $3\times3$ matrix multiplication.}
+\label{lst:hello}
+\end{listing}
+
+
+% Chapter 2: Fixed Size 3x3 mat
 %- Naive implementation
 %    - Show implementation
 %    - This is call by value
