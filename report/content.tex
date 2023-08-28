@@ -62,40 +62,25 @@ This report is structured as follows: Section 2 will explore a simplified versio
 \section{Fixed Size Matrix Multiplication}
 To start off with a simplified problem, this section focuses on a fixed quadratic matrix size of $n=3$. Using the mathematical definition, this can be trivially implemented:
 
-\begin{listing}[th]
+\begin{listing}[H]
   \inputminted{rust}{./assets/first_impl.rs}
 \caption{Naive implementation of a $3\times3$ matrix multiplication.}
 \label{lst:hello}
 \end{listing}
 
+The \texttt{Vec} arguments are currently passed as a call-by-value, which means that the whole vector gets copied onto the function's stack. Intuitively, this could be improved by using call-by-reference semantics, which just copies the pointer instead of the underlying data. Theoretically, this should result in a performance improvement. In reality, it is very hard to predict actual performance. Thus, some benchmarking is required. In order to measure the performance, either microbenchmarking or full application benchmarking can be used.
 
-% Chapter 2: Fixed Size 3x3 mat
-%- Naive implementation
-%    - Show implementation
-%    - This is call by value
-%    - Intuitively, this could be improved by using call-by-reference
-%    - But it is always better to measure than to just guess
-%    - Therefore, we have to do some Benchmarking. We can do
-%        - either Microbenchmarking
-%        - or Full Application Benchmarking
 \subsection{Microbenchmarking}
-%- Microbenchmarking
-%    - Is the performance evaulation of small isolated functions
-%    - We will look at two solutions
-%    1. Native Benchmarking: `cargo bench`
-%        - Not stable, nightly only
-%        - No integrated regression testing or visualizations
-%        - No clear roadmap to become stable
-%            - cite see slide
-%        - `cargo-benchcmp` for comparing benchmarks
-%    2. The canonical benchmarking library: `criterion.rs`
-%        - based on haskells criterion
-%        - Uses statistical analysis for regression significance
-%        - Blocks constant folding using `criterion::black_box`
-%            - "A function that is opaque to the optimizer, used to prevent the compiler from optimizing away computations in a benchmark."
-%                - <https://docs.rs/criterion/latest/criterion/fn.black_box.html>
-%        - HTML reports with plotting through `gnuplot`
-%        - `cargo-critcmp` for comparing benchmarks
+Microbenchmarking is the performance evaluation of small isolated functions. In the Rust ecosystem, there are two obvious solutions for microbenchmarking: Rust's native \texttt{cargo bench} as well as \texttt{criterion.rs}, which is the modern canonical benchmark library.
+
+\paragraph{Native Benchmarking} Cargo, Rust's package manager, supports benchmarking natively through the \texttt{cargo bench} \cite{cargobench} subcommand. Unfortunately, this is still experimental, thus only part of the unstable nightly Rust versions. Furthermore, no clear roadmap to stability exists \cite{benchstable}.
+
+\texttt{cargo bench} is a very lightweight microbenchmarking solution. It provides no integrated regression testing nor any kind of visualization or plotting. The 3rd-party \texttt{cargo-benchcmp} \cite{benchcmp} utility can be used to compare different benchmarks.
+
+\paragraph{Criterion} The other solution is \texttt{criterion.rs} \cite{criterion}, which is also available in stable Rust. It uses basic statistical outlier detection to measure regressions and their significance. Furthermore, it blocks constant folding using the \texttt{criterion::black\_box}, which is described as a ``function that is opaque to the optimizer, used to prevent the compiler from optimizing away computations in a benchmark'' \cite{blackbox}. It automatically generates HTML reports with plots using \texttt{gnuplot}. For benchmark comparisons, the \texttt{cargo-critcmp} \cite{critcmp} program can be used.\\
+
+As there is currently no active development in \texttt{cargo bench}, criterion should always be the prefered solution for microbenchmarking.
+
 \subsection{Full Application Benchmarking}
 %- Full Application Benchmarking
 %    - Hyperfine
