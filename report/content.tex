@@ -54,7 +54,7 @@ Let $A, B \in \mathbb{R}^{n\times n}, n \in \mathbb{N}$. Then $C \in \mathbb{R}^
 \[
   C_{ij} := \sum_{k=1}^n A_{ik} \cdot B_{kj}.
 \]
-$C_{ij}$ is the dot product of the $i$-th row of $A$ and the $j$-th column of $B$.
+One can think of $C_{ij}$ as the dot product of the $i$-th row of $A$ and the $j$-th column of $B$.
 
 \subsection{Structure}
 This report is structured as follows: Section 2 will explore a simplified version of the matrix multiplication problem where the dimension is fixed. Here, the focus will be set on microbenchmarking, full application benchmarking, and assembly analysis. Section 3 will then explore the full matrix multiplication, exploring the topics of profiling, compiler optimizations, cache oblivious as well as how to benchmark in noisy environments. Section 4 will provide a short introduction of parallelism. Lastly, section 5 concludes this report by providing an overview of all shown tools as well as further ressources.
@@ -82,18 +82,18 @@ Microbenchmarking is the performance evaluation of small isolated functions. In 
 As there is currently no active development in \texttt{cargo bench}, criterion should always be the prefered solution for microbenchmarking.
 
 \subsection{Full Application Benchmarking}
-%- Full Application Benchmarking
-%    - Hyperfine
-%        - Also allows for statistical analysis and outlier detection
-%        - Supports warmup runs for things such as page cache preparation
-%        - Can run commands inbetween runs to clear cache:
-%            - Example: `echo 1 > /proc/sys/vm/drop_caches` which
-%                - frees the page cache
-%                - <https://www.kernel.org/doc/Documentation/sysctl/vm.txt>
-%        - Supports exports to formats such as JSON or CSV for further analysis
-%        - Supports parametrized benchmarks
-%        - Repo contains various python scripts for visualization
-%            - <https://github.com/sharkdp/hyperfine/tree/master/scripts>
+There are several solutions for benchmarking whole applications, especially as they are usually agnostic to the application's programming language. But to stick to the modern Rust ecosystem, this report will focus on Hyperfine \cite{hyperfine}, a very actively developed command-line benchmarking tool written in Rust.\\
+
+From a simplified perspective, full application benchmarking is quite trivial. First, take a timestamp of the current time. Then, run the command to be benchmarked. Afterwards, take a new timestamp. The time delta is the benchmark time. But beyond this core functionality, Hyperfine supports many important and fundamental features for proper benchmarking and analysis.\\
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\textwidth]{./assets/hyperfine.png}
+  \caption{An example picture of Hyperfines output comparing \texttt{fd} and \texttt{find} \cite{hyperfine}}
+\end{figure}
+
+Firstly, Hyperfine supports out of the box statistical analysis and outlier detection. Since it can assume that the program run times are approximately equal, benchmark times are normal distributed. Thus, by fitting a normal distribution over all runs and computing its confidence interval, it can detect any outliers. Secondly, it allows for warmup runs and cache-clearing commands \footnote{such as \texttt{echo 1 > /proc/sys/vm/drop\_caches} to free the page cache \cite{kernel}.} between each run. Warmup runs are useful to fill caches such as the page cache for disk I/O. Lastly, it supports further analysis by providing an export to various formats, such as CSV, JSON, Markdown or AsciiDoc, which can then be analyzed programmatically. Hyperfines repository contains several python scripts for basic visualization \cite{hyperfinescripts}, which can be used as a starting point for further analysis.
+
 \subsection{Performance Optimization}
 % maybe a sentence of filler/transition?
 \subsubsection{Call By Reference}
