@@ -210,34 +210,6 @@
     \end{column}
   \end{columns}
 \end{frame}
-
-\begin{frame}{Next Improvement: 1 vs 2 derefs}
-  \begin{tcolorbox}[title=Reduce the amount of Dereferences]
-    \footnotesize\inputminted[xleftmargin=1em,linenos]{rust}{../assets/less_derefs.rs}
-  \end{tcolorbox}
-  \begin{columns}
-    \begin{column}{0.7\textwidth}
-  \begin{table}[h]
-    \centering
-    \begin{tabular}{|l|c|c|c|}
-      \hline
-      &\textbf{Mean} & \textbf{Std. Dev} & \textbf{Median}\\
-      \hline
-      \textbf{Call By Value} & 318.48 ns & 12.173 ns & 314.59 ns \\
-      \hline
-      \textbf{Less Derefs} & 7.7821 ns & 182.79 ps & 7.7775 ns \\
-      \hline
-      \end{tabular}
-  \end{table}
-    \end{column}
-    \begin{column}{0.3\textwidth}
-      % Note that this is the calculated increase
-      Total Improvements:\\
-      Mean: 3993.57\%\\
-      Median: 3944.87\%
-    \end{column}
-  \end{columns}
-\end{frame}
 % TODO Muendlich: Bei dem Spielproblem ist der Code so uebersichtlich dass wir noch den Assembler analysieren koennen
 
 \begin{frame}{Assembly 1: Compiler Explorer \cite{godbolt}}
