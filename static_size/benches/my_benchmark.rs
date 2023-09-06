@@ -125,24 +125,24 @@ fn matmul_benchmark(crit: &mut Criterion) {
     ];
     let mut result4 = [0.0; 9];
 
-    let mut group = crit.benchmark_group("Call by");
-    group.bench_function("Value", |bench| bench.iter(|| driver_code1(
+    let mut group = crit.benchmark_group("Static Size");
+    group.bench_function("Call by Value", |bench| bench.iter(|| driver_code1(
                 black_box(a1.clone()),
                 black_box(b1.clone()),
                 black_box(c1.clone())
     )));
-    group.bench_function("Reference", |bench| bench.iter(|| driver_code2(
+    group.bench_function("Call by Reference", |bench| bench.iter(|| driver_code2(
                 black_box(&a2),
                 black_box(&b2),
                 black_box(&c2)
     )));
-    group.bench_function("Less Heap", |bench| bench.iter(|| driver_code3(
+    group.bench_function("Primitive Arrays", |bench| bench.iter(|| driver_code3(
                 black_box(&a3),
                 black_box(&b3),
                 black_box(&c3),
                 black_box(&mut result3)
     )));
-    group.bench_function("Less Deref", |bench| bench.iter(|| driver_code4(
+    group.bench_function("DimReduction", |bench| bench.iter(|| driver_code4(
                 black_box(&a4),
                 black_box(&b4),
                 black_box(&c4),
