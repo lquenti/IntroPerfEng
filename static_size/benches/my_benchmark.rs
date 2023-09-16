@@ -51,22 +51,6 @@ fn driver_code3(a: &[[f32; 3]; 3], b: &[[f32; 3]; 3], c: &[[f32; 3]; 3], res_buf
 }
 
 
-pub fn matmul4(a: &[f32; 9], b: &[f32; 9], result: &mut [f32; 9]) {
-    for i in 0..3 {
-        for j in 0..3 {
-            for k in 0..3 {
-                result[i * 3 + j] += a[i * 3 + k] * b[k * 3 + j];
-            }
-        }
-    }
-}
-
-fn driver_code4(a: &[f32; 9], b: &[f32; 9], c: &[f32; 9], res_buf: &mut [f32; 9]) {
-    let mut temp = [0.0; 9];
-    matmul4(a, b, &mut temp);
-    matmul4(&temp, c, res_buf);
-}
-
 fn matmul_benchmark(crit: &mut Criterion) {
     let a1 = vec![
         vec![1.0, 2.0, 3.0],
@@ -108,23 +92,6 @@ fn matmul_benchmark(crit: &mut Criterion) {
         [0.0, 0.0, 0.0],
     ];
 
-    let a4 = [
-        1.0, 2.0, 3.0,
-        4.0, 5.0, 6.0,
-        7.0, 8.0, 9.0,
-    ];
-    let b4 = [
-        9.0, 8.0, 7.0,
-        6.0, 5.0, 4.0,
-        3.0, 2.0, 1.0,
-    ];
-    let c4 = [
-        1.0, 0.0, 0.0,
-        0.0, 1.0, 0.0,
-        0.0, 0.0, 1.0,
-    ];
-    let mut result4 = [0.0; 9];
-
     let mut group = crit.benchmark_group("Static Size");
     group.bench_function("Call by Value", |bench| bench.iter(|| driver_code1(
                 black_box(a1.clone()),
@@ -141,12 +108,6 @@ fn matmul_benchmark(crit: &mut Criterion) {
                 black_box(&b3),
                 black_box(&c3),
                 black_box(&mut result3)
-    )));
-    group.bench_function("DimReduction", |bench| bench.iter(|| driver_code4(
-                black_box(&a4),
-                black_box(&b4),
-                black_box(&c4),
-                black_box(&mut result4)
     )));
 }
 
