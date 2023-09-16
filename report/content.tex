@@ -303,67 +303,44 @@ For finding out whether it reduces cache misses, we can use \texttt{iai}.
 Here one can see that, although more RAM accesses, it has better L1 and L2 utilization.
 
 \section{A glimpse of (Inter-Node) Parallelism}
-%- Lastly, we are showing 2 kinds of inter-node parallism
-%    - Single thread parallelism using SIMD instructions
-%    - Multi threading using Rayon
+Rust has many ways to do inter-node parallelism\footnote{Rust also support intra-node parallelism using \texttt{rsmpi} \cite{rsmpi}, a rust-native MPI library compatible with OpenMPI and MPICH. Unfortunately, this is out of scope here. For more information, see my report on walky \cite{walky}, the rusty TSP solver.}. One can categorize iner-node parallelism into two categories: Single thread parallelism using SIMD instructions and multi threading. In this chapter, we will give a high-level overview how to archive both.
+
 \subsection{SIMD}
-%- SIMD
-%    - TODO explain SIMD
-%    - part of rust core library
-%    - two different APIs: The old, processor specific API and the new portable SIMD API
-%    - Old API
-%        - Experimental only: unsafe code
-%        - Low level platform specific structs
-%        - direct intrinsics translation
-%        - show how the functions look the same, see slide
-%        - Part of `core`: Doesn't require any allocator or OS features existing
-%    - Portable SIMD
-%        - Experimental only, SAFE
-%        - Generalized on bit width level
-%            - `std::simd::{f32x8, f64x4, i32x8}`
-%        - In order to not crash: Conditional compilation with
-%            - `#[cfg(target_arch="x86_64")]`
-%            - `#[cfg(target_feature="aes")]`
-%        - On runtime: Conditional execution with `std::is_x86_feature_detected`
-%        - If not checked: undefinied behvaiour
-%        - Part of `std`: Expects a global memory allocator as well as an operating system.
+While a complete introduction in \ac{SIMD} programming would be an report on its own\footnote{For a great introduction on how to do \ac{SIMD} in Rust, see the \ac{SIMD} Rust on Android Talk by Guillaume Endignoux \cite{simdtalk}.} it is noteworthy to say that Rust has two different approaches to support \ac{SIMD} programming. The old, processor specific API and the new, portable SIMD API.
+
+\paragraph{Processor specific API:} The processor specific API is experimental only and classified as unsafe, i.e. it doesn't give any memory guarantees. It is composed of the direct low level intrinsics procided by the CPU manufacturer and has the same function definitions as the C API. The only reason is that it is part of the \texttt{core} instead of \texttt{std} library: This means, it does not expect any memory allocator nor any OS syscalls to work properly and can thus we used bare metal.
+
+\paragraph{Portable SIMD:} The portable \ac{SIMD} API is, while also experimental, memory safe. Instead of providing instructions for any CPU architecture, it is generalized on a bit level with types such as \texttt{std::simd::\{f32x8, f64x4, i32x8\}}. This makes it the preferred API for non-bare metal programming. It is part of the \texttt{std} library.\\
+
+Lastly, note that code that does not have those processor features will produce undefined behaviour. There are two ways to mitigate this: If the target architecture is known at compile time, Rust supports conditional compilation\footnote{Compile for specific architecture: \texttt{\#[cfg(target\_arch="x86\_64")]}}\footnote{Compile for specific feature: \texttt{\#[cfg(target\_feature="aes")]}} to provide alternatives to architecture specific code. If this is not the case, functions such as \texttt{std::is\_x86\_feature\_detected} can be used. Note that these should not be used in hot loops as they provide an runtime overhead.
+
 \subsection{Multithreading}
-%- Multithreading
-%    - Rust supports many ways of multi threading
-%        - Primitives using the standard libary
-%            - See the book for More
-%                - <https://doc.rust-lang.org/book/ch16-00-concurrency.html>
-%        - Furthermore, `async/await` for managing async I/O
-%            - In order to enable the usage in many different environments (such as IoT), rust requires the developer to bring their own async runtime
-%            - The most common one is tokio
-%            - Other examples are `smol` as a simpler solution or `fuchsia-async` used in Googles Fuchsia OS>
-%            - For more on Rust Async I/O, see
-%                - "Asynchronous Programming in Rust"
-%                    - <https://rust-lang.github.io/async-book/01_getting_started/01_chapter.html#getting-started>
-%                - fasterthanlimes "Understanding Rust futures by going way too deep"
-%                    - <https://fasterthanli.me/articles/understanding-rust-futures-by-going-way-too-deep>
-%                - WithoutBoats "Zero-Cost Async IO" talk at RustLatam 2019
-%                    - <https://www.youtube.com/watch?v=skos4B5x7qE>
-%        - Lastly, there are many utility libraries.
-%            - Here, we will focus on `rayon`
+
+Rust supports several ways of doing multi threading. First of all, the standard library offers many primitives around simple OS-threads\footnote{Rust also supported green threads before 1.0 but they were cut because the scheduling menat that they were not zero cost.} See the ``Fearless Concurrency'' chapter of the Rust book for an introduction \cite{conbook}.\\
+
+Furthermore, Rust provides an \texttt{async/await} pattern for managing async \ac{I/O}. In order to enable the usage in many, vastly different environments such as \ac{IoT}, Rust requires the developer to bring their own async runtime. Most projects use \texttt{Tokio} \cite{tokio}, although other projects such as the simpler \texttt{smol} or \texttt{fuchsia-async} \cite{fuchsia} used in Googles Fuchsia. For more information to \texttt{async/await}, see the official async book \cite{asyncbook}, the announcement talk from WithoutBoats \cite{withoutboats} or fasterthanlimes ``Understanding Rust futures by going way too deep'' \cite{fasterthanlime}.\\
+
+Lastly, there are several utility libraries. Here, we will focus on \texttt{rayon} because of its simplicity.
+
 \subsubsection{Rayon}
-%    - Rayon
-%        - Rayon is a High-Level Parallelism Library, using dynamically sized thread pools
-%        - It gurantees **data-race freedom** by only allowing one thread to write
-%        - Its main features are: Parallel Iterators
-%            - Just replace `.iter()` with `.par_iter()`
-%            - Same functionality as sequential **if** the iterator has no side effects
-%            - Support for common high level functions such as
-%                - `.map(), .filter(), .reduce()...`
-%                - By implementing the iterator trait
-%            - Low level primitives such as `join()` enabling the `fork-join` model
-%                - `.join(|| a(), || b())`
-%                - **May** run in parallel based on whether idle cores are available
-%        - Example:
-%            - Show code
-%            - When writing it more functional...
-%            - one can only replace the `iter_mut()` by `.par_iter_mut()`
+
+Rayon is a high-level parallelism library using dynamically sized thread pools. It guarantees \textbf{data-race freedom} by allowing only one thread to write at a time. Its main features are drop-in parallel iteratiors: By replacing \texttt{.iter()} with \texttt{.par\_iter}, it is possible to use all functions provided for iterators, such as \texttt{.map()}, \texttt{.filter()}, \texttt{.reduce()} for typical functional patterns or \texttt{.join(|| a(), || b()} enabling the \texttt{fork-join} computation model.
+It is best explained with a code example. Lets rewrite our function in a more iterator based version:
+
+\begin{listing}[H]
+  \inputminted{rust}{./assets/02rayon.rs}
+\caption{An more functional version of our matrix multiplication}
+\end{listing}
+
+This can be parallelized by only replacing \texttt{.iter\_mut()} with \texttt{.par\_iter\_mut()}:
+
+\begin{listing}[H]
+  \inputminted{rust}{./assets/03rayon.rs}
+\caption{This is the parallelized version, changing a single function call!}
+\end{listing}
+
 \section{Conclusion and Further Ressources}
+
 %- Overview blabla
 %    - Rust is viable for HPC, although many parts are still experimental
 %    - There are many possibilities for optimizing Rust code
