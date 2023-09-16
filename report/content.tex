@@ -65,7 +65,6 @@ To start off with a simplified problem, this section focuses on a fixed quadrati
 \begin{listing}[H]
   \inputminted{rust}{./assets/first_impl.rs}
 \caption{Naive implementation of a $3\times3$ matrix multiplication.}
-\label{lst:hello}
 \end{listing}
 
 The \texttt{Vec} arguments are currently passed as a call-by-value, which means that the whole vector gets copied onto the function's stack. Intuitively, this could be improved by using call-by-reference semantics, which just copies the pointer instead of the underlying data. Theoretically, this should result in a performance improvement. In reality, it is very hard to predict actual performance. Thus, some benchmarking is required. In order to measure the performance, either microbenchmarking or full application benchmarking can be used.
@@ -95,110 +94,134 @@ From a simplified perspective, full application benchmarking is quite trivial. F
 Firstly, Hyperfine supports out of the box statistical analysis and outlier detection. Since it can assume that the program run times are approximately equal, benchmark times are normal distributed. Thus, by fitting a normal distribution over all runs and computing its confidence interval, it can detect any outliers. Secondly, it allows for warmup runs and cache-clearing commands \footnote{such as \texttt{echo 1 > /proc/sys/vm/drop\_caches} to free the page cache \cite{kernel}.} between each run. Warmup runs are useful to fill caches such as the page cache for disk I/O. Lastly, it supports further analysis by providing an export to various formats, such as CSV, JSON, Markdown or AsciiDoc, which can then be analyzed programmatically. Hyperfines repository contains several python scripts for basic visualization \cite{hyperfinescripts}, which can be used as a starting point for further analysis.
 
 \subsection{Performance Optimization}
-% maybe a sentence of filler/transition?
+For the benchmarking, the aforementioned \texttt{criterion.rs} benchmarking framework is used. The benchmark was done on a Dell Latitude 7420 with an Intel i5-1145G7 and 16GB of LPDDR4 RAM, compiled with rustc 1.72.0. The CPU idle was around 1\%.
+
 \subsubsection{Call By Reference}
-%    - Call by Reference
-%        - Add code as ref in appendix
-%        - mention that it improved performance by n%
-%            - full table in appendix
-%            - redo the benchmarks
-%        - Transition:
-%            - We used dynamically sized heap vectors, we know the length
+Although the data part of \texttt{Vec<>} is stored on the heap\footnote{Since \texttt{Vec<>} are dynamically resizable, the absolute size can't be known at compile time.} the stack-part is still very complex, since it has to keep track of several things such as the current size and its current maximal capacity. More importantly, the \texttt{Vec<>} struct has a bigger memory footprint than a pointer. Thus, using Call-By-Reference should improve the performance by requiring less memory copies! In Rust, this can be archived using the \texttt{\&} operator:
+
+\begin{listing}[H]
+  \inputminted{rust}{./assets/call_by_ref.rs}
+\caption{Changing the signature to Call-By-Reference semantics with references.}
+\end{listing}
+
+Using the default criterion settings \footnote{Default Rust Release build}, the following results were benchmarked:
+
+
+\begin{figure}[H]
+\centering
+\begin{subfigure}{.5\textwidth}
+  \centering
+  \includegraphics[width=\linewidth]{./assets/callbyvaluepdf}
+  \caption{Call By Value: Mean $307.19$ns}
+\end{subfigure}%
+\begin{subfigure}{.5\textwidth}
+  \centering
+  \includegraphics[width=\linewidth]{./assets/callbyrefpdf}
+  \caption{Call By Reference: Mean $205.58$ns}
+\end{subfigure}
+  \caption{Comparsions of the \acp{PDF} computed using \ac{KDE} for Call-By-Value and Call-By-Reference.}
+\end{figure}
+
+According to the benchmarks, this change alone resulted in a $49.426\%$ mean increase! Note that the full metric table is included in the appendix.\\
+
+There is one more obvious possible improvement to try: In this code, Rust's \texttt{Vec<>}, a dynamically sized, heap allocated vector is used. This could be replaced with a normal C-type array.
+
 \subsubsection{Primitive Stack Arrays}
-%    - Primitive Stack Arrays
-%        - We first used `std::vec`
-%            - heap allocated
-%            - dynamically sized
-%            - runtime bound checks everywhere
-%        - Instead, we can just specify that we want a ref to a continuous memory segment of proper size
-%            - show `&[[f32; 3]; 3]`
-%        - add code full
-%        - mention that it improved by n%
-%            - full table in appendix
-%        - possible explainations:
-%            - A lot of non-zero cost work initializing the complex vec struct
-%            - heap allocations
-%            - more conditional checks
-%                - explicitly bounds checking
-%                    - See the rust bounds check cookbook
-%                        - <https://github.com/Shnatsel/bounds-check-cookbook/>
-%            - Footnote:
-%                - Further analysis can be done through statistical profiling
-%                - explained later
-%                - as it doesn't help explaining perf eng concepts, it is left as an exercise to the reader
-\subsubsection{Reduce Pointer Chasing}
-%    - Reduce pointer chasing
-%        - Instead of 3 arrays of length 3, one could use a single array of length 9
-%        - this would half the number of dereferences
-%        - add code full
-%        - mention that it improved by n%
-%            - full table in appendix
-%    - Transition: This code is small enough that one could still analyze the assembly for further optimization
+Compared to static arrays, \texttt{Vec<>} has much overhead. Firsrly, since its size is not known at compile time, it performs several run-time bounds checks \footnote{This can be partially avoided. For more information, see the bounds checks cookbook \cite{bounds_cookbook}}. Next, it has to be heap-allocated, which can be way more expensive and results in worse memory locality. Lastly, \texttt{Vec<>} is a complex struct with many functions and features, which in turn results in more computation required.\\
+
+This is the code using primitive stack arrays instead of the more sophisticated, dynamically allocated vectors:
+
+\begin{listing}[H]
+  \inputminted{rust}{./assets/array.rs}
+\caption{Changing the signature to Call-By-Reference semantics with references.}
+\end{listing}
+
+Here are the results, compared to the initial version:
+
+\begin{figure}[H]
+\centering
+\begin{subfigure}{.5\textwidth}
+  \centering
+  \includegraphics[width=\linewidth]{./assets/callbyvaluepdf}
+  \caption{Call By Value: Mean $307.19$ns}
+\end{subfigure}%
+\begin{subfigure}{.5\textwidth}
+  \centering
+  \includegraphics[width=\linewidth]{./assets/arrayspdf}
+  \caption{Primitive Arrays: Mean $7.841$ns}
+\end{subfigure}
+  \caption{Comparsions of the \acp{PDF} computed using \ac{KDE} for the initial version and the one using primitive arrays.}
+\end{figure}
+
+This results in a staggering $3831.27\%$ mean increase! Once again, note that the full metric table is included in the appendix.\\
+
+There are several possible explainations for those results. It could be that the bounds check ruin the instruction pipelining. But the main reason ist most likely that the prior version requires an expensive heap allocation for the return value while the static arrays are already preallocated on the stack \footnote{Further analysis could be done through statistical profiling, which will be explained later. But since it doesn't help explaining performance engineering concepts, it is left as an exercise to the reader.}. Now that we did all high-level optimizations, the next step would be to optimize on the assembly level. The next section will show how to use proper tooling for assembly level optimization in Rust.
+
 \subsection{Assembly Optimizations}
-% maybe a sentence of filler/transition?
-\subsubsection{How Assembly can be Analyzed}
-% bla bla, two
+Modern compilers, such as the \ac{LLVM} based rustc, do a lot of optimization for performance. This results in vastly different assembly when comparing unoptimized code (\texttt{-O0}) to their optimized counter part (\texttt{-O3}). Thus, it often makes sense to look at the assembly for hot code paths\footnote{Code paths are 'hot' when they are executed very frequently, therefore crucial for the overall performance.}. Naively, one could just look at the whole binary and decode the bytes into their instructions. This is neither useful nor reasonable for large programs to analyze. Instead, in this section, two different ways to analyze assembly will be analyzed: The well known Compiler Explorer \cite{compilerexplorer} as well as the \texttt{cargo-show-asm} crate \cite{cargoshowasm}.
+
 \paragraph{Compiler Explorer}
-%        - Compiler Explorer
-%            - Online development environment
-%            - Started in 2012 for optimizing quantitative analysis algorithms
-%            - Supports
-%                - Over 30 Languages such as C/C++/Rust, but also Java/Python/Haskell
-%                - Supports customized compiler arguments (for example comparing `-O3` and `-Osize`)
-%                - Different compilers and versions for the same languages (i.e. `gcc` or `clang` for C)
-%            - Can be used either hosted or on-prem
-%            - Great UX, color codes the lines to map code to assembly
-%            - best fit for small programs as it can only handle a single file
+
+Compiler Explorer \cite{compilerexplorer} is an online development environment initially developed by Matt Godbolt, primarily used for analysis of C and C++ applications. It was started in 2023 for optimizing financial quantitative analysis algorithms. Compiler Explorer supports over 30 different languages; from typical high performance languages such as C, C++ and Fortran, bytecode languages such as Python and Java to more niche languages such as Haskell and Solidity. Additionally, one can compare different compilers (for example \texttt{gcc}, \texttt{clang} and \texttt{msvc} for C applications) and manually specify different compiler arguments such as \texttt{-Osize} instead of \texttt{-O3}. Since it can also be hosted on-premise, propriatary and other custom compilers can be added if needed.
+
+Its main feature is the color coding; Compiler Explorer assigns each function line to a specific color. The same color will then be used in the assembly window, providing an intuitive mapping and an good overall user experience. Unfortunately, it does not support multiple files and hasn't any dependency management \footnote{Although one could work around this restriction by installing all dependencies globally on a self hosted instance.}. To summarize, Compiler Explorer is the best fit for small, single file programs. For larger applications, the next tool can be used.
+
 \paragraph{cargo-show-asm}
-%        - `cargo-show-asm`
-%            - More minimalist, less polished CLI tool
-%            - Can work with any rust codebase, no matter the size or dependencies
-%            - Allows to view Assembly or LLVM-IR
-%            - Can query single functions
-%                - Can also resolve trait implementations
-%                    - which are roughly the equivalent of interface implementations in OOP
+
+\texttt{cargo-show-asm} \cite{cargoshowasm} is a more minimalist, less polished console application for analyzing assembly. It works with any rust code base, no matter the size or amount of dependencies. Instead of showing the assembler for all functions, one can query single functions as an CLI parameter. Lastly, instead of the architecture specific assembler code it can also return the \ac{LLVM} \ac{IR} instead.
+
+\begin{figure}[H]
+\centering
+\begin{subfigure}{.5\textwidth}
+  \centering
+  \includegraphics[width=\linewidth]{./assets/compexp}
+  \caption{Compiler Explorer}
+\end{subfigure}%
+\begin{subfigure}{.45\textwidth}
+  \centering
+  \includegraphics[width=\linewidth]{./assets/cargoasm}
+  \caption{\texttt{cargo-show-asm}}
+\end{subfigure}
+  \caption{Two applications to analyze Rust assembly: Compiler explorer and \texttt{cargo-show-asm}.}
+\end{figure}
+
+Next, two common compiler optimizations are covered: Loop Unrolling and Function inlining.
+
 \subsubsection{Loop Unrolling}
-%    - Loop Unrolling
-%        - Explaination:
-%            - If you know how often the loop runs, just replicate the assembly that many times
-%                - Pro:
-%                    - Reduces comparisons and jumps
-%                    - Easier pipelining; no need for path prediction (which can be wrong)
-%                - Contra:
-%                    - increases binary size
-%        - Was already applied in our case
-%        - Tooling: `unroll` provides a macro for creating unrolled rust code using the preprocessor
-%            - As it literally just duplicates the rust code, it does not work for dynamic length loops (although they can be deduced at compile time)
-%        - For those: `-C llvm-args=-unroll-threshold=N`
-%            - Do not apply without benchmarking, as it can consume too much of the CPU instruction cache.
+
+On the surface, loop unrolling is a simple concept: If the number of loop iterations are known at compile time, replicate the inner code that amount of time. This has multiple benefits. Firstly, it reduces the number of comparisons and jumps made in every iteration. Secondly, it allows for easier pipelining since there is no need for path prediction anymore! The main drawback is that code duplication obviously increases binary size.
+
+Looking at the assembly, loop unrolling was already applied in our case. But if the compiler did not unroll the function, there are two main ways to force it manually:
+\begin{itemize}
+  \item Unroll \cite{unroll} is a Rust macro to unroll the applications at compile time by replacing the unrolled rust code in preprocessing. Currently, it can just detect loops with integer literal bounds.
+  \item For more sophisticated loops, LLVM can be configured to more agressively apply loop unrolling. This is controlled by the \texttt{-unroll-threshold} parameter\footnote{So to apply it with \texttt{rustc}, use \texttt{-C llvm-args=-unroll-threshold=N} where \texttt{N} is an integer.}.
+\end{itemize}
+As an important remark, do not manually apply loop unrolling without benchmarking, as it can worsen performance by consuming too much of the L1 CPU instruction cache.
+
 \subsubsection{Function Inlining}
-%    - Function Inlining
-%        - Explaination:
-%            - Instead of jumping into a subroutine, and then back, it places the assembly of the subroutine into the outer function
-%                - Pro:
-%                    - Eliminates call overhead (moving arguments into registers)
-%                        - How much call overhead is based on the calling convention used
-%                            - Rust has no specified default calling convention
-%                - Contra:
-%                    - Increases binary size through code duplication
-%                    - Maybe worse performance through worse CPU instruction cache utilization
-%        - Was not applied in our case
-%        - But compiler hints exist: `#[inline(/always/never)]`
+
+The next, very common compiler optimization is function inlining. Instead of jumping into a subroutine, executing it, and then returning to the previous instructions it places the assembly of the subroutine into the outer function. On the upside, this eliminates the calling overhead (such as moving arguments into registers) specified by the calling convention \footnote{Interestingly, Rust does not have a default non-FFI calling convention for performance benefits. Instad, it requires all dependencies to be compiled with the same version, which is the canonical way when the package manager \texttt{cargo} is used.}. As already mentioned above, function inlining can also worsen performance though increased binary size and consequently less efficient cache utilization.
+
+In our case, it was not applied. But it can be applied manually with the \texttt{\#[inline(/always/never)]} attribute \cite{inline}.\\
+
+After covering benchmarking and assembly analysis, we can now approach the harder problem of variadic size matrix multiplication!
+
 \section{Variadic Size Matrix Multplication}
-%- Lets say, you get the following task:
-%    - "bla bla here is a deep learning framework that runs too slow, please optimize xoxo"
-%    - Now the questions are
-%        - "Why is it so slow"
-%        - "How does one figure this out?"
-%    - Solution: Profiling
+
+Now, after having a simplified toy problem, lets say you get the following task:\\
+
+``Our department has built a deep learning framework in Rust that inferences too slow. Please try to optimize the overall performance of this project''\\
+
+Before being able to optimize the code, one has to first ask the following question: Why is it so slow? In order to answer this question, profiling is needed.
+
 \subsection{Profiling}
-%- Profiling:
-%    - cite <https://nnethercote.github.io/perf-book/profiling.html> for enumeration
-%    - Profiling is used to find out which parts of the program are executed frequently enough to affect runtime
-%    - Since Rust produces normal binaries, most profilers just work
-%        - Including `perf` and `cachegrind`
-%    - Since Rust allows for polymorphism, the name mangling occurs. If the profiler doesn't support unmangling natively, `rustfilt` can be used instead
-%    - In this chapter, both `cargo-flamegraph` and `iai` will be represented
+
+Profiling is used to find out which parts of the program are executed frequently enough to effect runtime performance\footnote{So called \textbf{hot paths}.}. Since Rust produces normal binaries, most traditional profilers just work, including common ones such as Linux \texttt{perf} \cite{perf} and \texttt{cachegrind} \cite{cachegrind}. See the profiling section in thr Rust Performance Book for an more exhaustive list \cite{profiling}.\\
+
+Since rust supports polymorphism \texttt{Both ad-hoc polymorphism through traits and parametric polymorphism based on generics.} name mangling occurs. As assembly labels have to be unique, name mangling is a technique used to map all polymorphic instances of a function to an unique assmbler label. If the profiler doesn't support unmangling natively, \texttt{rustfilt} can be used manually \cite{rustfilt}.\\
+
+In this chapter, we use \texttt{cargo-flamegraph} \cite{flamegraph} and later \texttt{iai} \cite{iai} for profiling.
+
 \subsection{Cargo Flamegraph}
 %- Cargo flamegraph:
 %    - Statistical profiler
@@ -254,6 +277,7 @@ Firstly, Hyperfine supports out of the box statistical analysis and outlier dete
 %    - Show results
 %    - ALthrough it somehow has worse RAM, better L1 and L2
 %        - again: Analyzing that is beyond the scope and doesnt help explaining the concepts, thus exercise for the reader
+% HIER MITTAGESSEN
 \section{A glimpse of (Inter-Node) Parallelism}
 %- Lastly, we are showing 2 kinds of inter-node parallism
 %    - Single thread parallelism using SIMD instructions
