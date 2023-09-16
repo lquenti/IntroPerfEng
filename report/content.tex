@@ -218,66 +218,90 @@ Before being able to optimize the code, one has to first ask the following quest
 
 Profiling is used to find out which parts of the program are executed frequently enough to effect runtime performance\footnote{So called \textbf{hot paths}.}. Since Rust produces normal binaries, most traditional profilers just work, including common ones such as Linux \texttt{perf} \cite{perf} and \texttt{cachegrind} \cite{cachegrind}. See the profiling section in thr Rust Performance Book for an more exhaustive list \cite{profiling}.\\
 
-Since rust supports polymorphism \texttt{Both ad-hoc polymorphism through traits and parametric polymorphism based on generics.} name mangling occurs. As assembly labels have to be unique, name mangling is a technique used to map all polymorphic instances of a function to an unique assmbler label. If the profiler doesn't support unmangling natively, \texttt{rustfilt} can be used manually \cite{rustfilt}.\\
+Since rust supports polymorphism\footnote{Both ad-hoc polymorphism through traits and parametric polymorphism based on generics.} name mangling occurs. As assembly labels have to be unique, name mangling is a technique used to map all polymorphic instances of a function to an unique assmbler label. If the profiler doesn't support unmangling natively, \texttt{rustfilt} can be used manually \cite{rustfilt}.\\
 
 In this chapter, we use \texttt{cargo-flamegraph} \cite{flamegraph} and later \texttt{iai} \cite{iai} for profiling.
 
 \subsection{Cargo Flamegraph}
-%- Cargo flamegraph:
-%    - Statistical profiler
-%        - interrupts randomly
-%        - looks at the stack
-%        - then, using a monte carlo approach, it can approximate how much time is spent in each function
-%    - Uses `perf` and `dtrace` internally
-%    - Result: It is a slow `nxn` matrix multiplication! For the benchmarks, we assume `n=1024`.
+
+Cargo flamegraph \cite{flamegraph} is a statistical profiler that creates a flamegraph to analyze. In order to understand the result, one needs to understand how statistical profilers work internally.
+A statistical profiler works by interrupting the program randomly using the kernels interrupt system\footnote{Cargo flamegraph uses \texttt{perf} and \texttt{dtrace} internally.}. After interrupting, it looks at the stack frame, finding out which function stack is currently called. This is a single data point. Now, using a monte carlo approach, a statistical profiler can approximate how much time is spent in each function by taking many measurements.\\
+
+A flamegraph is a visualization of the stack frames. The wider the current stack frame, the more often those functions were called then interrupted. One layer got called by the layer below. Here is an example of an flamegraph:
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\textwidth]{./assets/exampleflamegraph}
+  \caption{An example flamegraph generated from Rust code \cite{flamegraph}.}
+\end{figure}
+
+For our fictional deep learning framework, lets assume that the result was a slow $N \times N$ variadic size matrix multiplication! For the benchmarks, we use $N=1024$.
+
 \subsection{Applying Previous Knowledge}
-%- Show unoptimized code
-%- We can apply our knowledge from the previous chapter
-%    - Show optimized code
-%- Before measuring, lets also tweak the whole project
+Lets say that the matrix multiplication function looks as follows:
+
+\begin{listing}[H]
+  \inputminted{rust}{./assets/variadic_unoptimized.rs}
+\caption{The unoptimized Rust code providing the variadic size quadratic matrix multiplication}
+\end{listing}
+
+Applying the knowledge of our previous chapters, we can already refactor it into the following:
+
+\begin{listing}[H]
+  \inputminted{rust}{./assets/variadic_optimized.rs}
+\caption{The code optimized analagously to chapter 2.}
+\end{listing}
+
+But before benchmarking this code, there are further free improvements to be had by configuring the compiler to maximize performance.
+
 \subsection{Compiler Optimizations}
-%- Compiler Optimizations:
-%    - Biggest Point: Use a release build (i.e. `-O3`)
-%        - This enables general optimization as well as vectorization
-%    - Enable LLVM link time optimization
-%        - further intermodular optimizations done during the link stage
-%            - Pro: Possible performance increasements
-%            - Contra: More compile time
-%    - Compiling for the native architecture
-%        - This allows to use more specialized instructions that are not available on every processor such as bigger vector registers for SIMD.
-%    - Using a single LLVM Codegen unit
-%        - This means to fully compile the whole program every time (excluding its dependencies)
-%            - Pro: More possibility to do global compiler optimizations
-%            - Contra: More compile time
-%    - Lastly, Profile Guided Optimization (PGO) was used. This is out of the scope for this project, see LINK for a great introduction on how the compiler team used it on `rustc` themselves.
-%        - <https://blog.rust-lang.org/inside-rust/2020/11/11/exploring-pgo-for-the-rust-compiler.html>
+There are several performance optimizations that should be enabled if performance is a high priority:
+\begin{itemize}
+  \item \textbf{Release Builds}: This is by far the biggest improvement. If one does not use the release build\footnote{With \texttt{cargo build --release}.} the code is not optimized. This enables several general optimizations as well as automatic vectorization.
+  \item \textbf{\ac{LLVM} \ac{LTO}}: \ac{LTO} enabled further, intermodular optimizations during the link stage. While this could improve code by optimizing beyond library bounds, it increases compile time, which is why it is disabled by default.
+  \item \textbf{Compiling for Native Architecture:} When compiling for the native architecture\footnote{Using the \texttt{RUSTFLAGS} environment variable, i.e. \texttt{RUSTFLAGS="-C target-cpu=native" cargo build --release}.} the compiler can use more specialized instructions that are not available on every processor such as bigger vector registers for SIMD. Note that this makes the code incompatible with older processor generations.
+  \item \textbf{Using a single \ac{LLVM} codegen unit:} Codegen units are analagous to translation units. This means that, when changing a single file, just the codegen unit in that file has to be recompiled. Therefore, optimizations can't be done beyond codegen unit bounds! Using a single codegen for the whole project allows the compiler to more agressively optimize globally. Note that this effectively disables partial compilations.
+  \item \textbf{\ac{PGO}:} \ac{PGO} could furthermore be used for more effective branch prediction\footnote{This is out of the scope for this project, for an introduction see how the compiler team used it on \texttt{rustc} \cite{pgo}}.
+\end{itemize}
+% TODO
+TODO RESULTS HERE
 %- Results table, graphs
+
+For the next and last optimization, some further theory is needed.
 \subsection{Cache-oblivious Algorithms}
-%- Cache-oblivious algorithms
-%    - use pic from slide
-%    - Standard Matrix Multiplication `A \cdot B`
-%        - A traverses row-major order
-%        - B traverses column-major order
-%            - Every step of B we get a cache miss
-%        - Solution: Transpose B
-%        - `C_{ij}` becomes row `A_i` times **row** `B_j`
-%        - Requires `\Theta(n^2)` precompute
-%    - Two questions:
-%        1. Does it improve speed?
-%            - Just benchmark it.
-%            - Yes, by n% (mean/median)
-%        2. Does it reduce cache misses?
-%            - For that, we can use `iai`, which is also very useful to benchmark in noisy environments
+
+When doing a standard matrix multiplication $C:=A \cdot B$, $A$ traverses the matrix in row-major order and $B$ traverses the matrix in column-major order. Since the memory is aligned in row-major order, in every step of $B$ we get a cache miss for large sizes of $B$.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.8\textwidth]{./assets/rowcol}
+  \caption{A visualization of row- and column-major order.}
+\end{figure}
+
+A possible solution could be to compute $A \cdot B^T$ instead by transposing $B$. Then, $C_{ij}$ is computed as row $A_i$ times \textbf{row} $B_j$! Unfortunately, since we have to actually compute the transpose beforehand, this requires $\Theta(n^2)$ precompute.
+
+Naturally, two questions arise:
+\begin{enumerate}
+  \item Does it improve speed?
+  \item Does it actually reduce cache misses?
+\end{enumerate}
+
+% TODO
+Whether it improves speed can easily be benchmarked.
+TODO RESULTS HERE\\
+
+For finding out whether it reduces cache misses, we can use \texttt{iai}.
+
 \subsection{Iai}
-%- `Iai`
-%    - `iai` is a high-precision, one-shot benchmark framework for Rust code.
-%    - This means that the code is run only a single time
-%    - It uses Cachegrind to simulate emulate the CPU and its caches
-%    - Thus, it is not affected by the noisy-neighbour problem facing traditional CI benchmarks
-%    - Show results
-%    - ALthrough it somehow has worse RAM, better L1 and L2
-%        - again: Analyzing that is beyond the scope and doesnt help explaining the concepts, thus exercise for the reader
-% HIER MITTAGESSEN
+\texttt{Iai} \cite{iai} is a high-precision, one-shot benchmark framework for Rust code. One-shot means that the code is only run a single time. This is possible by leveraging cachegrind \cite{cachegrind} under the hood to simulate the CPU and its caches, allowing us to count all cache accesses. Furthermore, it can be used for \ac{CI} pipelines since it solves the noisy-neighbour problem of multiple jobs executed on the same runner. Here are the results:
+
+\begin{listing}[H]
+  \inputminted{text}{./assets/iai.txt}
+\caption{The results running iai}
+\end{listing}
+
+Here one can see that, although more RAM accesses, it has better L1 and L2 utilization.
+
 \section{A glimpse of (Inter-Node) Parallelism}
 %- Lastly, we are showing 2 kinds of inter-node parallism
 %    - Single thread parallelism using SIMD instructions

@@ -1,0 +1,13 @@
+iai_normal
+  Instructions:         13970975862
+  L1 Accesses:          17192372607
+  L2 Accesses:           1074884737
+  RAM Accesses:              262191
+  Estimated Cycles:     22575972977
+
+iai_transpose
+  Instructions:          9144912377
+  L1 Accesses:          12838193034
+  L2 Accesses:             68158189
+  RAM Accesses:              328137
+  Estimated Cycles:     13190468774
