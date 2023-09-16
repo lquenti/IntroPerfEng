@@ -13,3 +13,11 @@ criterion = "0.3"
 [[bench]]
 name = "my_benchmark"
 harness = false
+
+[profile.release]
+opt-level = 0
+
+[profile.bench]
+opt-level = 0
+
+
