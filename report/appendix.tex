@@ -1,13 +1,171 @@
-\section{Work sharing}
+\section{Measurement Data}
 
-If you worked in a group, describe here how you distributed the work and the actual contributions of each peer.
+\subsection{Static Sized}
 
-\subsection{Hans}
-...
+\subsubsection{Call By Value}
+\begin{table}[H]
+\centering
+\begin{tabular}{|c|c|c|c|}
+\hline
+\textbf{} & \textbf{Lower bound} & \textbf{Estimate} & \textbf{Upper bound} \\
+\hline
+\textbf{Slope} & 307.55 ns & 310.15 ns & 313.04 ns \\
+\hline
+\textbf{$R^2$} & 0.8472829 & 0.8537299 & 0.8458089 \\
+\hline
+\textbf{Mean} & 304.66 ns & 307.19 ns & 310.70 ns \\
+\hline
+\textbf{Std. Dev.} & 6.3231 ns & 15.613 ns & 24.335 ns \\
+\hline
+\textbf{Median} & 301.60 ns & 302.08 ns & 304.29 ns \\
+\hline
+\textbf{MAD} & 1.9063 ns & 3.0129 ns & 5.6761 ns \\
+\hline
+\end{tabular}
+\caption{Summary of Data}
+\label{tab:data_summary_2}
+\end{table}
 
-\subsection{Peter}
-...
 
-\section{Code samples}
+\subsubsection{Call By Reference}
+\begin{table}[H]
+\centering
+\begin{tabular}{|c|c|c|c|}
+\hline
+ & \textbf{Lower bound} & \textbf{Estimate} & \textbf{Upper bound} \\
+\hline
+\textbf{Slope} & 204.67 ns & 205.86 ns & 207.17 ns \\
+\hline
+\textbf{$R^2$} & 0.9323924 & 0.9360205 & 0.9315760 \\
+\hline
+\textbf{Mean} & 204.65 ns & 205.58 ns & 206.62 ns \\
+\hline
+\textbf{Std. Dev.} & 3.5931 ns & 5.0447 ns & 6.2856 ns \\
+\hline
+\textbf{Median} & 203.75 ns & 204.99 ns & 205.51 ns \\
+\hline
+\textbf{MAD} & 1.9471 ns & 2.8148 ns & 3.8151 ns \\
+\hline
+\end{tabular}
+\caption{Summary of Data}
+\label{tab:data_summary}
+\end{table}
 
-This is part of the appendix...
+\subsubsection{Primitive Arrays}
+\begin{table}[H]
+\centering
+\begin{tabular}{|c|c|c|c|}
+\hline
+\textbf{} & \textbf{Lower bound} & \textbf{Estimate} & \textbf{Upper bound} \\
+\hline
+\textbf{Slope} & 7.7883 ns & 7.8243 ns & 7.8659 ns \\
+\hline
+\textbf{$R^2$} & 0.9481791 & 0.9509154 & 0.9472358 \\
+\hline
+\textbf{Mean} & 7.8054 ns & 7.8416 ns & 7.8845 ns \\
+\hline
+\textbf{Std. Dev.} & 125.05 ps & 202.72 ps & 279.05 ps \\
+\hline
+\textbf{Median} & 7.7467 ns & 7.7513 ns & 7.7607 ns \\
+\hline
+\textbf{MAD} & 16.400 ps & 24.632 ps & 44.433 ps \\
+\hline
+\end{tabular}
+\caption{Summary of Data}
+\label{tab:data_summary_3}
+\end{table}
+
+
+\subsection{Dynamically Sized}
+
+\subsubsection{No Compiler Optimizations, Naive}
+\begin{table}[H]
+\centering
+\begin{tabular}{|c|c|c|c|}
+\hline
+\textbf{} & \textbf{Lower bound} & \textbf{Estimate} & \textbf{Upper bound} \\
+\hline
+\textbf{$R^2$} & 0.0129440 & 0.0134225 & 0.0129313 \\
+\hline
+\textbf{Mean} & 23.550 s & 23.575 s & 23.600 s \\
+\hline
+\textbf{Std. Dev.} & 111.52 ms & 127.82 ms & 145.31 ms \\
+\hline
+\textbf{Median} & 23.494 s & 23.547 s & 23.636 s \\
+\hline
+\textbf{MAD} & 88.492 ms & 148.98 ms & 181.21 ms \\
+\hline
+\end{tabular}
+\caption{Summary of Data}
+\label{tab:data_summary_4}
+\end{table}
+
+
+\subsubsection{No Compiler Optimizations, Optimized code}
+\begin{table}[H]
+\centering
+\begin{tabular}{|c|c|c|c|}
+\hline
+\textbf{} & \textbf{Lower bound} & \textbf{Estimate} & \textbf{Upper bound} \\
+\hline
+\textbf{$R^2$} & 0.0131894 & 0.0136728 & 0.0131513 \\
+\hline
+\textbf{Mean} & 8.7616 s & 8.7684 s & 8.7756 s \\
+\hline
+\textbf{Std. Dev.} & 29.949 ms & 35.706 ms & 40.959 ms \\
+\hline
+\textbf{Median} & 8.7559 s & 8.7658 s & 8.7735 s \\
+\hline
+\textbf{MAD} & 24.535 ms & 30.151 ms & 40.061 ms \\
+\hline
+\end{tabular}
+\caption{Summary of Data}
+\label{tab:data_summary_5}
+\end{table}
+
+
+\subsubsection{Compiler Optimizations, Optimized code}
+\begin{table}[H]
+\centering
+\begin{tabular}{|c|c|c|c|}
+\hline
+\textbf{} & \textbf{Lower bound} & \textbf{Estimate} & \textbf{Upper bound} \\
+\hline
+\textbf{$R^2$} & 0.1137963 & 0.1175455 & 0.1134823 \\
+\hline
+\textbf{Mean} & 3.0698 s & 3.0708 s & 3.0719 s \\
+\hline
+\textbf{Std. Dev.} & 4.2317 ms & 5.1644 ms & 6.0320 ms \\
+\hline
+\textbf{Median} & 3.0691 s & 3.0699 s & 3.0710 s \\
+\hline
+\textbf{MAD} & 3.3207 ms & 4.2208 ms & 5.5206 ms \\
+\hline
+\end{tabular}
+\caption{Summary of Data}
+\label{tab:data_summary_6}
+\end{table}
+
+
+\subsubsection{Compiler Optimizations, Optimized and Transposed code}
+\begin{table}[H]
+\centering
+\begin{tabular}{|c|c|c|c|}
+\hline
+\textbf{} & \textbf{Lower bound} & \textbf{Estimate} & \textbf{Upper bound} \\
+\hline
+\textbf{$R^2$} & 0.0054076 & 0.0056054 & 0.0053917 \\
+\hline
+\textbf{Mean} & 2.1711 s & 2.1714 s & 2.1716 s \\
+\hline
+\textbf{Std. Dev.} & 1.0805 ms & 1.3218 ms & 1.5562 ms \\
+\hline
+\textbf{Median} & 2.1709 s & 2.1713 s & 2.1717 s \\
+\hline
+\textbf{MAD} & 1.0773 ms & 1.4593 ms & 1.6688 ms \\
+\hline
+\end{tabular}
+\caption{Summary of Data}
+\label{tab:data_summary_7}
+\end{table}
+
