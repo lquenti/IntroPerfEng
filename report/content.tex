@@ -155,7 +155,7 @@ Here are the results, compared to the initial version:
 
 This results in a staggering $3831.27\%$ mean increase! Once again, note that the full metric table is included in the appendix.\\
 
-There are several possible explainations for those results. It could be that the bounds check prevent instruction pipelining. But the main reason is most likely that the prior version requires an expensive heap allocation for the return value while the static arrays are already preallocated on the stack \footnote{Further analysis could be done through statistical profiling, which will be explained later. But since it doesn't help explaining performance engineering concepts, it is left as an exercise to the reader.}. Now that we did all high-level optimizations, the next step would be to optimize on the assembly level. The next section will show how to use proper tooling for assembly level optimization in Rust.
+There are several possible explainations for those results. It could be that the bounds check prevent instruction pipelining. But the main reason is most likely that the prior version requires an expensive heap allocation for the return value while the static arrays are already preallocated on the stack \footnote{Further analysis could be done through statistical profiling, which will be explained later. But since it doesn't help explaining performance engineering concepts, it is left as an exercise to the reader.}. Now that all high-level optimizations were applied, the next step would be to optimize on the assembly level. The next section will show how to use proper tooling for assembly level optimization in Rust.
 
 \subsection{Assembly Optimizations}
 Modern compilers, such as the \ac{LLVM} based rustc, do a lot of optimization for performance. This results in vastly different assembly when comparing unoptimized code (\texttt{-O0}) to their optimized counter part (\texttt{-O3}). Thus, it often makes sense to look at the assembly for hot code paths\footnote{Code paths are 'hot' when they are executed very frequently, therefore crucial for the overall performance.}. Naively, one could just look at the whole binary and decode the bytes into their instructions. This is neither useful nor reasonable for large programs to analyze. Instead, in this section, two different ways to analyze assembly will be analyzed: The well known Compiler Explorer \cite{compilerexplorer} as well as the \texttt{cargo-show-asm} crate \cite{cargoshowasm}.
@@ -202,11 +202,11 @@ As an important remark, do not manually apply loop unrolling without benchmarkin
 
 The next, very common compiler optimization is function inlining. Instead of jumping into a subroutine, executing it, and then returning to the previous instructions it places the assembly of the subroutine into the outer function. On the upside, this eliminates the calling overhead (such as moving arguments into registers) specified by the calling convention \footnote{Interestingly, Rust does not have a default non-FFI calling convention for performance benefits. Instad, it requires all dependencies to be compiled with the same version, which is the canonical way when the package manager \texttt{cargo} is used.}. As already mentioned above, function inlining can also worsen performance though increased binary size and consequently less efficient cache utilization. In our case, it was not applied\footnote{But it can be applied manually with the \texttt{\#[inline(/always/never)]} attribute \cite{inline}.}.\\
 
-After covering benchmarking and assembly analysis, we can now approach the harder problem of variadic size matrix multiplication!
+After covering benchmarking and assembly analysis, now the harder problem of variadic size matrix multiplication can be approached!
 
 \section{Variadic Size Matrix Multplication}
 
-Now, after having a simplified toy problem, lets say you get the following task:\\
+Now, after having a simplified toy problem, lets say the following task is given:\\
 
 ``Our department has built a deep learning framework in Rust that inferences too slow. Please try to optimize the overall performance of this project''\\
 
@@ -218,7 +218,7 @@ Profiling is used to find out which parts of the program are executed frequently
 
 Since rust supports polymorphism\footnote{Both ad-hoc polymorphism through traits and parametric polymorphism based on generics.} name mangling occurs. As assembly labels have to be unique, name mangling is a technique used to map all polymorphic instances of a function to an unique assmbler label. If the profiler doesn't support unmangling natively, \texttt{rustfilt} can be used manually \cite{rustfilt}.\\
 
-In this chapter, we use \texttt{cargo-flamegraph} \cite{flamegraph} and later \texttt{iai} \cite{iai} for profiling.
+In this chapter, \texttt{cargo-flamegraph} \cite{flamegraph} and later \texttt{iai} \cite{iai} will be used for profiling.
 
 \subsection{Cargo Flamegraph}
 
@@ -233,7 +233,7 @@ A flamegraph is a visualization of the stack frames. The wider the current stack
   \caption{An example flamegraph generated from Rust code \cite{flamegraph}.}
 \end{figure}
 
-For our fictional deep learning framework, lets assume that the result was a slow $N \times N$ variadic size matrix multiplication! For the benchmarks, we use $N=1024$.
+For our fictional deep learning framework, lets assume that the result was a slow $N \times N$ variadic size matrix multiplication! For the benchmarks, $N=1024$ is used.
 
 \subsection{Applying Previous Knowledge}
 Lets say that the matrix multiplication function looks as follows:
@@ -243,7 +243,7 @@ Lets say that the matrix multiplication function looks as follows:
 \caption{The unoptimized Rust code providing the variadic size quadratic matrix multiplication}
 \end{listing}
 
-Applying the knowledge of our previous chapters, we can already refactor it into the following:
+Applying the knowledge of our previous chapters, it can already be refactored into the following:
 
 \begin{listing}[H]
   \inputminted{rust}{./assets/variadic_optimized.rs}
@@ -288,7 +288,7 @@ Here are the results, the full table can be found in the appendix:
 For the next and last optimization, some further theory is needed.
 \subsection{Cache-oblivious Algorithms}
 
-When doing a standard matrix multiplication $C:=A \cdot B$, $A$ traverses the matrix in row-major order and $B$ traverses the matrix in column-major order. Since the memory is aligned in row-major order, in every step of $B$ we get a cache miss for large sizes of $B$.
+When doing a standard matrix multiplication $C:=A \cdot B$, $A$ traverses the matrix in row-major order and $B$ traverses the matrix in column-major order. Since the memory is aligned in row-major order, in every step of $B$ cache miss happens for large sizes of $B$.
 
 \begin{figure}[H]
   \centering
@@ -296,7 +296,7 @@ When doing a standard matrix multiplication $C:=A \cdot B$, $A$ traverses the ma
   \caption{A visualization of row- and column-major order.}
 \end{figure}
 
-A possible solution could be to compute $A \cdot B^T$ instead by transposing $B$. Then, $C_{ij}$ is computed as row $A_i$ times \textbf{row} $B_j$! Unfortunately, since we have to actually compute the transpose beforehand, this requires $\Theta(n^2)$ precompute.
+A possible solution could be to compute $A \cdot B^T$ instead by transposing $B$. Then, $C_{ij}$ is computed as row $A_i$ times \textbf{row} $B_j$! Unfortunately, since the transpose has to actually be computed beforehand, this requires $\Theta(n^2)$ precompute.
 
 Naturally, two questions arise:
 \begin{enumerate}
@@ -323,7 +323,7 @@ Whether it improves speed can easily be benchmarked.
 
 the performance was improved.\\
 
-For finding out whether it reduces cache misses, we can use \texttt{iai}.
+For finding out whether it reduces cache misses, \texttt{iai} can be used.
 
 \subsection{Iai}
 \texttt{Iai} \cite{iai} is a high-precision, one-shot benchmark framework for Rust code. One-shot means that the code is only run a single time. This is possible by leveraging cachegrind \cite{cachegrind} under the hood to simulate the CPU and its caches, allowing us to count all cache accesses. Furthermore, it can be used for \ac{CI} pipelines since it solves the noisy-neighbour problem of multiple jobs executed on the same runner. Here are the results:
@@ -336,12 +336,12 @@ For finding out whether it reduces cache misses, we can use \texttt{iai}.
 Here one can see that, although more RAM accesses, it has better L1 and L2 utilization.
 
 \section{A glimpse of (Inter-Node) Parallelism}
-Rust has many ways to do inter-node parallelism\footnote{Rust also support intra-node parallelism using \texttt{rsmpi} \cite{rsmpi}, a rust-native MPI library compatible with OpenMPI and MPICH. Unfortunately, this is out of scope here. For more information, see my report on walky \cite{walky}, the rusty TSP solver.}. One can categorize iner-node parallelism into two categories: Single thread parallelism using SIMD instructions and multi threading. In this chapter, we will give a high-level overview how to archive both.
+Rust has many ways to do inter-node parallelism\footnote{Rust also support intra-node parallelism using \texttt{rsmpi} \cite{rsmpi}, a rust-native MPI library compatible with OpenMPI and MPICH. Unfortunately, this is out of scope here. For more information, see my report on walky \cite{walky}, the rusty TSP solver.}. One can categorize iner-node parallelism into two categories: Single thread parallelism using SIMD instructions and multi threading. In this chapter, a high-level overview how to archive both will be given.
 
 \subsection{SIMD}
 While a complete introduction in \ac{SIMD} programming would be an report on its own\footnote{For a great introduction on how to do \ac{SIMD} in Rust, see the \ac{SIMD} Rust on Android Talk by Guillaume Endignoux \cite{simdtalk}.} it is noteworthy to say that Rust has two different approaches to support \ac{SIMD} programming. The old, processor specific API and the new, portable SIMD API.
 
-\paragraph{Processor specific API:} The processor specific API is experimental only and classified as unsafe, i.e. it doesn't give any memory guarantees. It is composed of the direct low level intrinsics procided by the CPU manufacturer and has the same function definitions as the C API. The only reason to use this API is that it is part of the \texttt{core} instead of \texttt{std} library: This means, it does not expect any memory allocator nor any OS syscalls to work properly and can thus we used bare metal.
+\paragraph{Processor specific API:} The processor specific API is experimental only and classified as unsafe, i.e. it doesn't give any memory guarantees. It is composed of the direct low level intrinsics procided by the CPU manufacturer and has the same function definitions as the C API. The only reason to use this API is that it is part of the \texttt{core} instead of \texttt{std} library: This means, it does not expect any memory allocator nor any OS syscalls to work properly and can thus bare metal was used.
 
 \paragraph{Portable SIMD:} The portable \ac{SIMD} API is, while also experimental, memory safe. Instead of providing instructions for any CPU architecture, it is generalized on a bit level with types such as \texttt{std::simd::\{f32x8, f64x4, i32x8\}}. This makes it the preferred API for non-bare metal programming. It is part of the \texttt{std} library.\\
 
@@ -353,7 +353,7 @@ Rust supports several ways of doing multi threading. First of all, the standard 
 
 Furthermore, Rust provides an \texttt{async/await} pattern for managing async \ac{I/O}. In order to enable the usage in many, vastly different environments such as \ac{IoT}, Rust requires the developer to bring their own async runtime. Most projects use \texttt{Tokio} \cite{tokio}, although other projects such as the simpler \texttt{smol} or \texttt{fuchsia-async} \cite{fuchsia} used in Googles Fuchsia. For more information to \texttt{async/await}, see the official async book \cite{asyncbook}, the announcement talk from WithoutBoats \cite{withoutboats} or fasterthanlimes ``Understanding Rust futures by going way too deep'' \cite{fasterthanlime}.\\
 
-Lastly, there are several utility libraries. Here, we will focus on \texttt{rayon} because of its simplicity.
+Lastly, there are several utility libraries. Here, the focus will be on \texttt{rayon} because of its simplicity.
 
 \subsubsection{Rayon}
 
