@@ -263,9 +263,29 @@ There are several performance optimizations that should be enabled if performanc
   \item \textbf{Using a single \ac{LLVM} codegen unit:} Codegen units are analagous to translation units. This means that, when changing a single file, just the codegen unit in that file has to be recompiled. Therefore, optimizations can't be done beyond codegen unit bounds! Using a single codegen for the whole project allows the compiler to more agressively optimize globally. Note that this effectively disables partial compilations.
   \item \textbf{\ac{PGO}:} \ac{PGO} could furthermore be used for more effective branch prediction\footnote{This is out of the scope for this project, for an introduction see how the compiler team used it on \texttt{rustc} \cite{pgo}}.
 \end{itemize}
-% TODO
-TODO RESULTS HERE
-%- Results table, graphs
+
+Here are the results, the full table can be found in the appendix:
+
+\begin{figure}[H]
+\centering
+\begin{subfigure}{.33\textwidth}
+  \centering
+  \includegraphics[width=\linewidth]{./assets/nocompiler_unoptimized}
+  % hacky but works
+  \caption{No compiler optimizations.\\\hspace*{0.6cm}Naive code.\\\hspace*{0.6cm}Mean: $23.575$s}
+\end{subfigure}%
+\begin{subfigure}{.33\textwidth}
+  \centering
+  \includegraphics[width=\linewidth]{./assets/nocompiler_optimized.png}
+  \caption{No compiler optimizations.\\\hspace*{0.6cm}Optimized code.\\\hspace*{0.6cm}Mean: $8.7684$s}
+\end{subfigure}%
+\begin{subfigure}{.33\textwidth}
+  \centering
+  \includegraphics[width=\linewidth]{./assets/compiler_optimized.png}
+  \caption{Compiler optimizations.\\\hspace*{0.6cm}Optimized code.\\\hspace*{0.6cm}Mean: $3.0708$s}
+\end{subfigure}%
+  \caption{Performance comparison between unoptimized code, optimized code and optimized code with compiler optimization enabled.}
+\end{figure}
 
 For the next and last optimization, some further theory is needed.
 \subsection{Cache-oblivious Algorithms}
@@ -286,9 +306,22 @@ Naturally, two questions arise:
   \item Does it actually reduce cache misses?
 \end{enumerate}
 
-% TODO
 Whether it improves speed can easily be benchmarked.
-TODO RESULTS HERE\\
+
+\begin{figure}[H]
+\centering
+\begin{subfigure}{.5\textwidth}
+  \centering
+  \includegraphics[width=\linewidth]{./assets/compiler_optimized.png}
+  \caption{Compiler optimizations.\\\hspace*{0.6cm}Optimized code.\\\hspace*{0.6cm}Mean: $3.0708$s}
+\end{subfigure}%
+\begin{subfigure}{.5\textwidth}
+  \centering
+  \includegraphics[width=\linewidth]{./assets/compiler_optimized_transposed.png}
+  \caption{Compiler optimizations.\\\hspace*{0.6cm}Optimized and transposed code.\\\hspace*{0.6cm}Mean: $2.1714$s}
+\end{subfigure}%
+  \caption{Performance comparison between unoptimized code, optimized code and optimized code with compiler optimization enabled.}
+\end{figure}
 
 For finding out whether it reduces cache misses, we can use \texttt{iai}.
 
