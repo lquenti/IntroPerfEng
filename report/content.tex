@@ -1,8 +1,8 @@
 \section{Introduction}
 \subsection{Motivation}
-From a programming language perspective, \ac{HPC} is dominated by code written C, C++ or Fortran as these provide the low level control and optimization capablilites common in tightly-optimized code. However, as Rust was initially designed as a modern, memory-safe C++ replacement, it could be a valid choice for any kind of performance-critical code.\\
+From a programming language perspective, \ac{HPC} is dominated by code written C, C++ or Fortran as these provide the low level control and optimization capablilites required for tightly-optimized code. However, as Rust was initially designed as a modern, memory-safe C++ replacement, it could be a valid choice for any kind of performance-critical code.\\
 
-Instead of just providing yet another taxonomy of successful \ac{HPC} projects in Rust, this report will rather provide an introduction to the topic on performance engineering in Rust, implicitly covering the current state of the ecosystem while providing an short explaination of each of the common concepts. Instead of just providing an enumeration of techniques, it rather uses \ac{PBL} to introduce the techniques just-in-time when they are relevant, providing a more coherent learning progression.\\
+Rather than just providing yet another taxonomy of successful \ac{HPC} projects in Rust, this report will give an introduction to the topic on performance engineering in Rust, implicitly covering the current state of the ecosystem while providing an short explaination of each of the common concepts. Instead of just providing an enumeration of techniques, it uses \ac{PBL} to introduce the techniques just-in-time when they are relevant, providing a more coherent learning progression.\\
 
 \acl{PBL} can be difficult. The problem has to be
 \begin{itemize}
@@ -29,12 +29,12 @@ Having memory safety is paramount, as most security issues in traditional C/C++ 
   \item Ubuntu’s Linux kernel \cite{ubumem}: "\textit{65\%} of CVEs behind the last six months of Ubuntu security updates to the Linux kernel have been memory unsafety."
 \end{itemize}
 
-Furthermore, it is now adapted by many big tech firms such as Amazon \cite{awsrust}, Google \cite{googlerust}, Meta \cite{metarust}, and Microsoft \cite{msftrust}. Lastly, in december 2022, it became the first language other than C and Assembly supported for Linux kernel development \cite{linuxrust}.
+Furthermore, it is now adapted by many big tech firms such as Amazon \cite{awsrust}, Google \cite{googlerust}, Meta \cite{metarust}, and Microsoft \cite{msftrust}. Lastly, in december 2022, it became the first language besides C and Assembly supported for Linux kernel development \cite{linuxrust}.
 
 \subsubsection{Why Rust is a good fit for HPC}
 Basically, one can think of Rust as a modern dialect of C++ enforced by the compiler. It uses \ac{RAII} internally to ensure memory safety, while references are roughly equivalent to \texttt{std::unique\_ptr}.\\
 
-Especially relevant is the great interoperability with other languages. It supports easy integration with C++ using \texttt{bindgen} \cite{bindgen}, which is developed by the Rust core team. Rust also allows for easy embedding into Python code using \texttt{PyO3} \cite{pyo3}, allowing for high-performant native extensions.\\
+Especially relevant is the great interoperability with other languages. It supports easy integration with C++ using \texttt{bindgen} \cite{bindgen}, which is maintained by the Rust core team. Rust also allows for easy embedding into Python code using \texttt{PyO3} \cite{pyo3}, allowing for high-performant native extensions.\\
 
 Furthermore, it allows for very low level control, even to the extend of bare metal deployment support. Due to Rusts aforementioned \ac{RAII}-alike memory management model, the runtime has no need for a garbage collector. One can even bring their own memory allocator and do raw pointer arithmetic if required. Lastly, Rust supports architecture based conditional compilation which makes it possible to write fast programs leveraging modern CPU instructions while providing portable alternatives. To support bare metal, OS-less development, Rust's standard library is split into 3 tiers:
 
@@ -50,7 +50,7 @@ Lastly, it supports many modern functional concepts such as immutability by defa
 
 \subsection{Quadratic Matrix Multiplication}
 
-Let $A, B \in \mathbb{R}^{n\times n}, n \in \mathbb{N}$. Then $C \in \mathbb{R}^{n \times n}$ is defined as
+Let $A, B \in \mathbb{R}^{n\times n}, n \in \mathbb{N}$. Then the matrix multiplication $C \in \mathbb{R}^{n \times n}$ is defined as
 \[
   C_{ij} := \sum_{k=1}^n A_{ik} \cdot B_{kj}.
 \]
@@ -67,7 +67,7 @@ To start off with a simplified problem, this section focuses on a fixed quadrati
 \caption{Naive implementation of a $3\times3$ matrix multiplication.}
 \end{listing}
 
-The \texttt{Vec} arguments are currently passed as a call-by-value, which means that the whole vector gets copied onto the function's stack. Intuitively, this could be improved by using call-by-reference semantics, which just copies the pointer instead of the underlying data. Theoretically, this should result in a performance improvement. In reality, it is very hard to predict actual performance. Thus, some benchmarking is required. In order to measure the performance, either microbenchmarking or full application benchmarking can be used.
+The \texttt{Vec} arguments are currently passed as a call-by-value, which means that the vector struct gets copied onto the function's stack. Intuitively, this could be improved by using call-by-reference semantics, which just copies the pointer instead of the underlying data. Theoretically, this should result in a performance improvement. In reality, it is very hard to predict actual performance. Thus, some benchmarking is required. In order to measure the performance, either microbenchmarking or full application benchmarking can be used.
 
 \subsection{Microbenchmarking}
 Microbenchmarking is the performance evaluation of small isolated functions. In the Rust ecosystem, there are two obvious solutions for microbenchmarking: Rust's native \texttt{cargo bench} as well as \texttt{criterion.rs}, which is the modern canonical benchmark library.
@@ -76,7 +76,7 @@ Microbenchmarking is the performance evaluation of small isolated functions. In 
 
 \texttt{cargo bench} is a very lightweight microbenchmarking solution. It provides no integrated regression testing nor any kind of visualization or plotting. The 3rd-party \texttt{cargo-benchcmp} \cite{benchcmp} utility can be used to compare different benchmarks.
 
-\paragraph{Criterion} The other solution is \texttt{criterion.rs} \cite{criterion}, which is also available in stable Rust. It uses basic statistical outlier detection to measure regressions and their significance. Furthermore, it blocks constant folding using the \texttt{criterion::black\_box}, which is described as a ``function that is opaque to the optimizer, used to prevent the compiler from optimizing away computations in a benchmark'' \cite{blackbox}. It automatically generates HTML reports with plots using \texttt{gnuplot}. For benchmark comparisons, the \texttt{cargo-critcmp} \cite{critcmp} program can be used.\\
+\paragraph{Criterion} The other solution is \texttt{criterion.rs} \cite{criterion}, which is also available in stable Rust. It uses basic statistical outlier detection to measure regressions and their significance. Furthermore, it blocks constant folding using the \texttt{criterion::black\_box}, which is described as a ``function that is opaque to the optimizer, used to prevent the compiler from optimizing away computations in a benchmark'' \cite{blackbox}. It automatically generates HTML reports with plots using \texttt{gnuplot} or \texttt{plotters}. For benchmark comparisons, the \texttt{cargo-critcmp} \cite{critcmp} program can be used.\\
 
 As there is currently no active development in \texttt{cargo bench}, criterion should always be the prefered solution for microbenchmarking.
 
@@ -91,7 +91,7 @@ From a simplified perspective, full application benchmarking is quite trivial. F
   \caption{An example picture of Hyperfines output comparing \texttt{fd} and \texttt{find} \cite{hyperfine}}
 \end{figure}
 
-Firstly, Hyperfine supports out of the box statistical analysis and outlier detection. Since it can assume that the program run times are approximately equal, benchmark times are normal distributed. Thus, by fitting a normal distribution over all runs and computing its confidence interval, it can detect any outliers. Secondly, it allows for warmup runs and cache-clearing commands \footnote{such as \texttt{echo 1 > /proc/sys/vm/drop\_caches} to free the page cache \cite{kernel}.} between each run. Warmup runs are useful to fill caches such as the page cache for disk I/O. Lastly, it supports further analysis by providing an export to various formats, such as CSV, JSON, Markdown or AsciiDoc, which can then be analyzed programmatically. Hyperfines repository contains several python scripts for basic visualization \cite{hyperfinescripts}, which can be used as a starting point for further analysis.
+Firstly, Hyperfine supports out of the box statistical analysis and outlier detection. Since it can assume that the program run times are approximately equal, benchmark times should be normally distributed. Thus, by fitting a normal distribution over all runs and computing its confidence interval, it can detect any outliers. Secondly, it allows for warmup runs and cache-clearing commands \footnote{such as \texttt{echo 1 > /proc/sys/vm/drop\_caches} to free the page cache \cite{kernel}.} between each run. Warmup runs are useful to fill caches such as the page cache for disk I/O. Lastly, it supports further analysis by providing an export to various formats, such as CSV, JSON, Markdown or AsciiDoc, which can then be analyzed programmatically. Hyperfines repository contains several python scripts for basic visualization \cite{hyperfinescripts}, which can be used as a starting point for further analysis.
 
 \subsection{Performance Optimization}
 For the benchmarking, the aforementioned \texttt{criterion.rs} benchmarking framework is used. The benchmark was done on a Dell Latitude 7420 with an Intel i5-1145G7 and 16GB of LPDDR4 RAM, compiled with rustc 1.72.0. The CPU idle was around 1\%.
@@ -104,7 +104,7 @@ Although the data part of \texttt{Vec<>} is stored on the heap\footnote{Since \t
 \caption{Changing the signature to Call-By-Reference semantics with references.}
 \end{listing}
 
-Using the default criterion settings \footnote{Default Rust Release build}, the following results were benchmarked:
+Using the default criterion settings \footnote{Default Rust Release build.}, the following results were benchmarked:
 
 
 \begin{figure}[H]
@@ -127,7 +127,7 @@ According to the benchmarks, this change alone resulted in a $49.426\%$ mean inc
 There is one more obvious possible improvement to try: In this code, Rust's \texttt{Vec<>}, a dynamically sized, heap allocated vector is used. This could be replaced with a normal C-type array.
 
 \subsubsection{Primitive Stack Arrays}
-Compared to static arrays, \texttt{Vec<>} has much overhead. Firsrly, since its size is not known at compile time, it performs several run-time bounds checks \footnote{This can be partially avoided. For more information, see the bounds checks cookbook \cite{bounds_cookbook}}. Next, it has to be heap-allocated, which can be way more expensive and results in worse memory locality. Lastly, \texttt{Vec<>} is a complex struct with many functions and features, which in turn results in more computation required.\\
+Compared to static arrays, \texttt{Vec<>} has much more overhead. Firstly, since its size is not known at compile time, it performs several run-time bounds checks \footnote{This can be partially avoided. For more information, see the bounds checks cookbook \cite{bounds_cookbook}}. Next, it has to be heap-allocated, which can be way more expensive and results in worse memory locality. Lastly, \texttt{Vec<>} is a complex struct with many functions and features, which in turn results in more computation required.\\
 
 This is the code using primitive stack arrays instead of the more sophisticated, dynamically allocated vectors:
 
@@ -155,7 +155,7 @@ Here are the results, compared to the initial version:
 
 This results in a staggering $3831.27\%$ mean increase! Once again, note that the full metric table is included in the appendix.\\
 
-There are several possible explainations for those results. It could be that the bounds check ruin the instruction pipelining. But the main reason ist most likely that the prior version requires an expensive heap allocation for the return value while the static arrays are already preallocated on the stack \footnote{Further analysis could be done through statistical profiling, which will be explained later. But since it doesn't help explaining performance engineering concepts, it is left as an exercise to the reader.}. Now that we did all high-level optimizations, the next step would be to optimize on the assembly level. The next section will show how to use proper tooling for assembly level optimization in Rust.
+There are several possible explainations for those results. It could be that the bounds check prevent instruction pipelining. But the main reason is most likely that the prior version requires an expensive heap allocation for the return value while the static arrays are already preallocated on the stack \footnote{Further analysis could be done through statistical profiling, which will be explained later. But since it doesn't help explaining performance engineering concepts, it is left as an exercise to the reader.}. Now that we did all high-level optimizations, the next step would be to optimize on the assembly level. The next section will show how to use proper tooling for assembly level optimization in Rust.
 
 \subsection{Assembly Optimizations}
 Modern compilers, such as the \ac{LLVM} based rustc, do a lot of optimization for performance. This results in vastly different assembly when comparing unoptimized code (\texttt{-O0}) to their optimized counter part (\texttt{-O3}). Thus, it often makes sense to look at the assembly for hot code paths\footnote{Code paths are 'hot' when they are executed very frequently, therefore crucial for the overall performance.}. Naively, one could just look at the whole binary and decode the bytes into their instructions. This is neither useful nor reasonable for large programs to analyze. Instead, in this section, two different ways to analyze assembly will be analyzed: The well known Compiler Explorer \cite{compilerexplorer} as well as the \texttt{cargo-show-asm} crate \cite{cargoshowasm}.
@@ -182,10 +182,10 @@ Its main feature is the color coding; Compiler Explorer assigns each function li
   \includegraphics[width=\linewidth]{./assets/cargoasm}
   \caption{\texttt{cargo-show-asm}}
 \end{subfigure}
-  \caption{Two applications to analyze Rust assembly: Compiler explorer and \texttt{cargo-show-asm}.}
+  \caption{Rust assembly analysis: Compiler explorer and \texttt{cargo-show-asm}.}
 \end{figure}
 
-Next, two common compiler optimizations are covered: Loop Unrolling and Function inlining.
+Next, two common compiler optimizations will be covered: Loop Unrolling and Function inlining.
 
 \subsubsection{Loop Unrolling}
 
@@ -196,13 +196,11 @@ Looking at the assembly, loop unrolling was already applied in our case. But if 
   \item Unroll \cite{unroll} is a Rust macro to unroll the applications at compile time by replacing the unrolled rust code in preprocessing. Currently, it can just detect loops with integer literal bounds.
   \item For more sophisticated loops, LLVM can be configured to more agressively apply loop unrolling. This is controlled by the \texttt{-unroll-threshold} parameter\footnote{So to apply it with \texttt{rustc}, use \texttt{-C llvm-args=-unroll-threshold=N} where \texttt{N} is an integer.}.
 \end{itemize}
-As an important remark, do not manually apply loop unrolling without benchmarking, as it can worsen performance by consuming too much of the L1 CPU instruction cache.
+As an important remark, do not manually apply loop unrolling without benchmarking, as it can worsen performance by consuming too much of the CPU instruction cache.
 
 \subsubsection{Function Inlining}
 
-The next, very common compiler optimization is function inlining. Instead of jumping into a subroutine, executing it, and then returning to the previous instructions it places the assembly of the subroutine into the outer function. On the upside, this eliminates the calling overhead (such as moving arguments into registers) specified by the calling convention \footnote{Interestingly, Rust does not have a default non-FFI calling convention for performance benefits. Instad, it requires all dependencies to be compiled with the same version, which is the canonical way when the package manager \texttt{cargo} is used.}. As already mentioned above, function inlining can also worsen performance though increased binary size and consequently less efficient cache utilization.
-
-In our case, it was not applied. But it can be applied manually with the \texttt{\#[inline(/always/never)]} attribute \cite{inline}.\\
+The next, very common compiler optimization is function inlining. Instead of jumping into a subroutine, executing it, and then returning to the previous instructions it places the assembly of the subroutine into the outer function. On the upside, this eliminates the calling overhead (such as moving arguments into registers) specified by the calling convention \footnote{Interestingly, Rust does not have a default non-FFI calling convention for performance benefits. Instad, it requires all dependencies to be compiled with the same version, which is the canonical way when the package manager \texttt{cargo} is used.}. As already mentioned above, function inlining can also worsen performance though increased binary size and consequently less efficient cache utilization. In our case, it was not applied\footnote{But it can be applied manually with the \texttt{\#[inline(/always/never)]} attribute \cite{inline}.}.\\
 
 After covering benchmarking and assembly analysis, we can now approach the harder problem of variadic size matrix multiplication!
 
@@ -323,6 +321,8 @@ Whether it improves speed can easily be benchmarked.
   \caption{Performance comparison between unoptimized code, optimized code and optimized code with compiler optimization enabled.}
 \end{figure}
 
+the performance was improved.\\
+
 For finding out whether it reduces cache misses, we can use \texttt{iai}.
 
 \subsection{Iai}
@@ -341,7 +341,7 @@ Rust has many ways to do inter-node parallelism\footnote{Rust also support intra
 \subsection{SIMD}
 While a complete introduction in \ac{SIMD} programming would be an report on its own\footnote{For a great introduction on how to do \ac{SIMD} in Rust, see the \ac{SIMD} Rust on Android Talk by Guillaume Endignoux \cite{simdtalk}.} it is noteworthy to say that Rust has two different approaches to support \ac{SIMD} programming. The old, processor specific API and the new, portable SIMD API.
 
-\paragraph{Processor specific API:} The processor specific API is experimental only and classified as unsafe, i.e. it doesn't give any memory guarantees. It is composed of the direct low level intrinsics procided by the CPU manufacturer and has the same function definitions as the C API. The only reason is that it is part of the \texttt{core} instead of \texttt{std} library: This means, it does not expect any memory allocator nor any OS syscalls to work properly and can thus we used bare metal.
+\paragraph{Processor specific API:} The processor specific API is experimental only and classified as unsafe, i.e. it doesn't give any memory guarantees. It is composed of the direct low level intrinsics procided by the CPU manufacturer and has the same function definitions as the C API. The only reason to use this API is that it is part of the \texttt{core} instead of \texttt{std} library: This means, it does not expect any memory allocator nor any OS syscalls to work properly and can thus we used bare metal.
 
 \paragraph{Portable SIMD:} The portable \ac{SIMD} API is, while also experimental, memory safe. Instead of providing instructions for any CPU architecture, it is generalized on a bit level with types such as \texttt{std::simd::\{f32x8, f64x4, i32x8\}}. This makes it the preferred API for non-bare metal programming. It is part of the \texttt{std} library.\\
 
@@ -369,11 +369,13 @@ This can be parallelized by only replacing \texttt{.iter\_mut()} with \texttt{.p
 
 \begin{listing}[H]
   \inputminted{rust}{./assets/03rayon.rs}
-\caption{This is the parallelized version, changing a single function call!}
+\caption{The parallelized version, changing a single function call.}
 \end{listing}
 
 \section{Conclusion and Further Ressources}
 
 To conclude, although many parts are still experimental, all tooling for proper performance engineering exists, making Rust a viable programming language for \ac{HPC}. A summary of all tools can be found in the appendix.\\
 
-If one is more interested in performance engineering, the best resources for understanding performance tuning in Rust is the ``Rust Performance Book'' \cite{rperfbook}. To understand more about performance engineering and the theory behind it, the free online book ``Algorithmica: Algorithms for Modern Handware'' \cite{algomodern} is a good starting point. Finally, if one is more interested in intra-node parallelism, the \texttt{rsmpi} library \cite{rsmpi} has great examples to get started.
+If one is more interested in performance engineering, the best resources for understanding performance tuning in Rust is the ``Rust Performance Book'' \cite{rperfbook}. To understand more about performance engineering and the theory behind it, the free online book ``Algorithmica: Algorithms for Modern Handware'' \cite{algomodern} is a good starting point. Finally, if one is more interested in intra-node parallelism, the \texttt{rsmpi} library \cite{rsmpi} has great examples to get started.\\
+
+The full code can be found on \url{https://github.com/lquenti/IntroPerfEng}.
