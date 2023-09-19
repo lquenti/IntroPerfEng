@@ -162,3 +162,31 @@
 \caption{Full Data: Compiler Optimizations, Optimized and Transposed Code}
 \end{table}
 
+\section{Overview of all tools}
+
+  \begin{table}[H]
+\centering
+    \begin{tabular}{|l|l|}
+      \hline
+      \textbf{Topic} & \textbf{Tool}\\
+      \hline
+      Microbenchmarking & Criterion\\
+      \hline
+      Application Benchmarking & Hyperfine\\
+      \hline
+      Assembly Generation & Compiler Explorer, cargo show-asm\\
+      \hline
+      Loop Unrolling & \texttt{unroll}, Compiler Arguments\\
+      \hline
+      Function Inlining & \texttt{\#[inline]} \\
+      \hline
+      Statistical Profiling & \texttt{cargo-flamegraph} \\
+      \hline
+      CI benchmarking & \texttt{iai} \\
+      \hline
+      SIMD & \texttt{std::simd}, \texttt{core::arch} \\
+      \hline
+      Intra-Node parallelism & rayon \\
+      \hline
+    \end{tabular}
+  \end{table}
