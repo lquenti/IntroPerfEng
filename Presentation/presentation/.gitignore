@@ -1,5 +1,4 @@
 # also leave out the compiled
-template.pdf
 
 ## Core latex/pdflatex auxiliary files:
 *.aux
