@@ -104,7 +104,7 @@ Although the data part of \texttt{Vec<>} is stored on the heap\footnote{Since \t
 \caption{Changing the signature to Call-By-Reference semantics with references.}
 \end{listing}
 
-Using the default criterion settings \footnote{Default Rust Release build.}, the following results were benchmarked:
+Using the default criterion settings \footnote{Default Rust Release build and 100 iterations.}, the following results were benchmarked:
 
 
 \begin{figure}[H]
@@ -321,8 +321,6 @@ Whether it improves speed can easily be benchmarked.
   \caption{Performance comparison between unoptimized code, optimized code and optimized code with compiler optimization enabled.}
 \end{figure}
 
-the performance was improved.\\
-
 To find out whether it reduces cache misses, \texttt{iai} can be used.
 
 \subsection{Iai}
@@ -335,13 +333,13 @@ To find out whether it reduces cache misses, \texttt{iai} can be used.
 
 Here one can see that, although it uses more RAM accesses, it has better L1 and L2 utilization.
 
-\section{A glimpse of (Inter-Node) Parallelism}
-Rust has many ways to do inter-node parallelism\footnote{Rust also supports intra-node parallelism using \texttt{rsmpi} \cite{rsmpi}, a rust-native MPI library compatible with OpenMPI and MPICH. Unfortunately, this is out of scope here. For more information, see my report on walky \cite{walky}, the rusty TSP solver.}. One can categorize inter-node parallelism into two categories: Single-thread parallelism using SIMD instructions and multi-threading. In this chapter, a high-level overview of how to archive both will be given.
+\section{A glimpse of (Intra-Node) Parallelism}
+Rust has many ways to do intra-node parallelism\footnote{Rust also supports inter-node parallelism using \texttt{rsmpi} \cite{rsmpi}, a rust-native MPI library compatible with OpenMPI and MPICH. Unfortunately, this is out of scope here. For more information, see my report on walky \cite{walky}, the rusty TSP solver.}. One can categorize intra-node parallelism into two categories: Single-thread parallelism using SIMD instructions and multi-threading. In this chapter, a high-level overview of how to archive both will be given.
 
 \subsection{SIMD}
 While a complete introduction to \ac{SIMD} programming would be a report on its own\footnote{For a great introduction on how to do \ac{SIMD} in Rust, see the \ac{SIMD} Rust on Android Talk by Guillaume Endignoux \cite{simdtalk}.} it is noteworthy to say that Rust has two different approaches to support \ac{SIMD} programming. The old, processor-specific API and the new, portable SIMD API.
 
-\paragraph{Processor-specific API:} The processor-specific API is experimental only and classified as unsafe, i.e. it doesn't give any memory guarantees. It is composed of the direct low-level intrinsics provided by the CPU manufacturer and has the same function definitions as the C API. The only reason to use this API is that it is part of the \texttt{core} instead of the \texttt{std} library: This means, it does not expect any memory allocator nor any OS syscalls to work properly and can thus bare metal was used.
+\paragraph{Processor-specific API:} The processor-specific API is experimental only and classified as unsafe, i.e. it doesn't give any memory guarantees. It is composed of the direct low-level intrinsics provided by the CPU manufacturer and has the same function definitions as the C API. The only reason to use this API is that it is part of the \texttt{core} instead of the \texttt{std} library: This means, it does not expect any memory allocator nor any OS syscalls to work properly and can thus be used for bare metal development.
 
 \paragraph{Portable SIMD:} The portable \ac{SIMD} API is, while also experimental, memory-safe. Instead of providing instructions for any CPU architecture, it is generalized on a bit level with types such as \texttt{std::simd::\{f32x8, f64x4, i32x8\}}. This makes it the preferred API for non-bare metal programming. It is part of the \texttt{std} library.\\
 
@@ -376,6 +374,6 @@ This can be parallelized by only replacing \texttt{.iter\_mut()} with \texttt{.p
 
 To conclude, although many parts are still experimental, all tooling for proper performance engineering exists, making Rust a viable programming language for \ac{HPC}. A summary of all tools can be found in the appendix.\\
 
-If one is more interested in performance engineering, the best resource for understanding performance tuning in Rust is the ``Rust Performance Book'' \cite{rperfbook}. To understand more about performance engineering and the theory behind it, the free online book ``Algorithmica: Algorithms for Modern Hardware'' \cite{algomodern} is a good starting point. Finally, if one is more interested in intra-node parallelism, the \texttt{rsmpi} library \cite{rsmpi} has great examples to get started.\\
+If one is more interested in performance engineering, the best resource for understanding performance tuning in Rust is the ``Rust Performance Book'' \cite{rperfbook}. To understand more about performance engineering and the theory behind it, the free online book ``Algorithmica: Algorithms for Modern Hardware'' \cite{algomodern} is a good starting point. Finally, if one is more interested in inter-node parallelism, the \texttt{rsmpi} library \cite{rsmpi} has great examples to get started.\\
 
 The full code can be found at \url{https://github.com/lquenti/IntroPerfEng}.
