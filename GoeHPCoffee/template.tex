@@ -42,10 +42,6 @@
 	\titlepage
 \end{frame}
 
-\begin{frame}{Overview}
-\tableofcontents
-\end{frame}
-
 \section{Introduction}
 
 \begin{frame}{Learning Objectives}
@@ -70,7 +66,7 @@
     \item Its like modern C++ enforced by the compiler
       \begin{itemize}
         \item RAII-based memory management
-        \item References are like \texttt{std::unique\_ptr}
+        \item References are like zero-cost \texttt{std::unique\_ptr}
       \end{itemize}
       \pause
     \item Great Python / C++ interoperability
@@ -83,7 +79,7 @@
       \begin{itemize}
         \item immutability by default
         \item Traits/typeclasses instead of inheritance
-        \item exhaustive pattern matching
+        \item compiler enforced exhaustive pattern matching
         \item Algebraic data types
         \item No Nullability
       \end{itemize}
@@ -153,31 +149,6 @@
     \end{column}
     \begin{column}{0.5\textwidth}
       \includegraphics[width=\textwidth]{./assets/hyperfine.png} \cite{hyperfine}
-    \end{column}
-  \end{columns}
-\end{frame}
-
-\begin{frame}{Benchmarking Results (-O3)}
-    \includegraphics[width=\textwidth]{./assets/first_violin.png}
-  \begin{columns}
-    \begin{column}{0.7\textwidth}
-  \begin{table}[h]
-\centering
-\begin{tabular}{|l|c|c|c|}
-\hline
-& \textbf{Mean} & \textbf{Std. Dev} & \textbf{Median} \\
-\hline
-\textbf{Call By Reference} & 202.31 ns & 3.5063 ns & 201.96 ns \\
-\hline
-\textbf{Call By Value} & 318.48 ns & 12.173 ns & 314.59 ns \\
-\hline
-\end{tabular}
-\end{table}
-    \end{column}
-    \begin{column}{0.3\textwidth}
-      Total Improvements:\\
-      Mean: 57.42\%\\
-      Median: 55.77\%
     \end{column}
   \end{columns}
 \end{frame}
@@ -261,11 +232,7 @@
     \item How do I figure this out?
       \pause
     \item \textbf{Solution: Profiling}
-  \end{itemize}
-\end{frame}
-
-\begin{frame}{Profiling}
-  \begin{itemize}
+      \pause
     \item Since Rust produces normal binaries, most profilers just work.
       \begin{itemize}
         \item Including:
@@ -476,7 +443,6 @@
 \begin{frame}{Rayon \cite{rayon}}
   \begin{itemize}
     \item High-Level Parallelism Library
-    \item Gurantees \textbf{data-race freedom}
     \item Main Feature: Parallel Iterators
       \begin{itemize}
         \item Just replace \texttt{.iter()} with \texttt{.par\_iter()}
@@ -487,7 +453,7 @@
           \end{itemize}
         \item Low level primitives such as \texttt{.join()}:
           \begin{itemize}
-            \item \texttt{.join(|| a(), || b())}
+            \item \texttt{.join(|| quick\_sort(lo), || quick\_sort(hi))}
             \item \textbf{May} run in parallel
             \item Based on if idle cores are available
           \end{itemize}
@@ -495,22 +461,61 @@
   \end{itemize}
 \end{frame}
 
-\begin{frame}{Rayon (cond.)}
-  \begin{tcolorbox}[title=Unported Code (no transpose)]
-    \footnotesize\inputminted[xleftmargin=1em,linenos]{rust}{./assets/01rayon.rs}
-  \end{tcolorbox}
-\end{frame}
+% \begin{frame}{Rayon (cond.)}
+%   \begin{tcolorbox}[title=Unported Code (no transpose)]
+%     \footnotesize\inputminted[xleftmargin=1em,linenos]{rust}{./assets/01rayon.rs}
+%   \end{tcolorbox}
+% \end{frame}
+%
+% \begin{frame}{Rayon (cond.)}
+%   \begin{tcolorbox}[title=Ported to Iterators]
+%     \footnotesize\inputminted[xleftmargin=1em,linenos]{rust}{./assets/02rayon.rs}
+%   \end{tcolorbox}
+% \end{frame}
+%
+% \begin{frame}{Rayon (cond.)}
+%   \begin{tcolorbox}[title=Ported to Iterators \textbf{and Parallelized!}]
+%     \footnotesize\inputminted[xleftmargin=1em,linenos]{rust}{./assets/03rayon.rs}
+%   \end{tcolorbox}
+% \end{frame}
 
-\begin{frame}{Rayon (cond.)}
-  \begin{tcolorbox}[title=Ported to Iterators]
-    \footnotesize\inputminted[xleftmargin=1em,linenos]{rust}{./assets/02rayon.rs}
-  \end{tcolorbox}
-\end{frame}
-
-\begin{frame}{Rayon (cond.)}
-  \begin{tcolorbox}[title=Ported to Iterators \textbf{and Parallelized!}]
-    \footnotesize\inputminted[xleftmargin=1em,linenos]{rust}{./assets/03rayon.rs}
-  \end{tcolorbox}
+\begin{frame}{MPI}
+  \begin{columns}
+    \begin{column}{0.5\textwidth}
+      \begin{block}{rsmpi \cite{mpi}}
+        \begin{itemize}
+          \item Pure Rust MPI interface implementation
+          \item Supports following MPI implementations:
+            \begin{itemize}
+              \item OpenMPI
+              \item MPICH
+              \item MS-MPI
+              \item Spectrum MPI (unofficial)
+              \item Cray MPI (unofficial)
+            \end{itemize}
+        \end{itemize}
+      \end{block}
+    \end{column}
+    \pause
+    \begin{column}{0.5\textwidth}
+      \begin{block}{Supported Features}
+        \begin{itemize}
+          \item Groups, Communicators
+          \item Point to point communication
+          \item Collective Communication
+        \end{itemize}
+      \end{block}
+      \pause
+      \begin{block}{Unsupported Features}
+        \begin{itemize}
+          \item One-sided communication (RDMA)
+          \item MPI parallel I/O
+          \item Several edge cases
+          \item Communication Analysis (e.g. Score-P)
+        \end{itemize}
+      \end{block}
+    \end{column}
+  \end{columns}
 \end{frame}
 
 \section{Conclusion}
@@ -526,16 +531,7 @@
       \pause
     \item Algorithmica: Algorithms for Modern Hardware \cite{algorithmica}
       \pause
-    \item rsmpi \cite{mpi}
-      \begin{itemize}
-        \item Pure Rust implementation
-        \item Compatible with
-          \begin{itemize}
-            \item OpenMPI
-            \item MPICH
-            \item MS-MPI (Windows)
-          \end{itemize}
-      \end{itemize}
+    \item References to each tools
   \end{itemize}
 \end{frame}
 
@@ -555,9 +551,7 @@
       \hline
       \textbf{Topic} & \textbf{Tool}\\
       \hline
-      Microbenchmarking & Criterion\\
-      \hline
-      Application Benchmarking & Hyperfine\\
+      Benchmarking & Criterion, Hyperfine\\
       \hline
       Assembly Generation & Compiler Explorer, cargo show-asm\\
       \hline
@@ -572,6 +566,8 @@
       SIMD & \texttt{std::simd}, \texttt{core::arch} \\
       \hline
       Intra-Node parallelism & rayon \\
+      \hline
+      MPI & rsmpi \\
       \hline
     \end{tabular}
   \end{table}
