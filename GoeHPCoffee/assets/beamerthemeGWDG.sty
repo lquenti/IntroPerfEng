@@ -1,0 +1,125 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% GWDG Presentation Theme
+% LaTeX Template
+% Version 2.3.1 (2024-02-19)
+%
+% This template was adapted by:
+% Jonathan Decker (jonathan.decker@uni-goettingen.de)
+% From a template made by:
+% Julian Kunkel (julian.kunkel@gwdg.de)
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\definecolor{colorBlue}{HTML}{009EE0}
+\definecolor{colorBlue2}{HTML}{4B5860}
+\definecolor{colorBlue3}{HTML}{4B5860}
+\definecolor{colorGray}{HTML}{404040}
+
+\newcommand{\myfooterimage}{}
+\newcommand{\mygrouplogo}{\includegraphics[width=4cm]{gwdg}}
+\newcommand{\mytitlelogo}{\includegraphics[height=2.8cm]{hpc_background}}
+
+\def\disableheader{not empty}
+\def\loadextrasettings{not empty}
+
+\newcommand{\applyfooterlinetemplate}{
+
+	\setbeamertemplate{footline}[text line]{
+		\begin{beamercolorbox}[sep=0.5em,wd=\paperwidth,leftskip=0.2cm,rightskip=0.2cm]{colorBlue}
+			\color{colorBlue2}{\scriptsize \mydate \hfill \mytitle \hfill \scriptsize \insertframenumber}
+		\end{beamercolorbox}
+	}
+
+}
+
+\newcommand{\applytitlepagetemplate}{
+	
+	\defbeamertemplate*{title page}{customized}[1][]
+	{
+		\hspace*{-0.5cm}
+		\begin{tikzpicture}[x=\textwidth,y=\textheight]
+			\node[inner sep=0,anchor=south west]  (0,0){\includegraphics[width=17cm,height=9cm]{gwdg-background}};
+			
+			\node[inner sep=0pt, anchor=west,text width=\the\paperwidth-1cm] (title) at (1cm,6.2cm) {\usebeamerfont{title}\Huge\textcolor{colorBlue}{\inserttitle}};
+			
+			\node[inner sep=0pt, anchor=west,text width=\the\paperwidth-2cm] (title) at (1cm,5.2cm) {\usebeamerfont{subtitle}%
+				\textcolor{gray}{\insertsubtitle}};
+			
+			\node[inner sep=0pt, anchor=west] (author) at (1cm,4.2cm) {\usebeamerfont{author}\setstretch{0.5}\parbox{9cm}{\textcolor{gray}{ \insertauthor }}};
+			
+			\node[inner sep=0pt, anchor=east] (author) at (\the\paperwidth,2.3cm) {\insertTitleLogo};
+			
+			\node[inner sep=0pt, anchor=east] (author) at (\the\paperwidth+0.5cm,0.5cm) {\tiny \insertTitleLicense};
+			
+			\node[inner sep=0pt, anchor=east] (unit) at (\the\paperwidth-0.4cm,\the\paperheight-1.9cm) {\textcolor{gray}{\insertinstitute}};
+			
+			\node[inner sep=0pt, anchor=west] (unit) at (1.2cm,0.2cm) {\scriptsize \textcolor{black}{\insertdate}};
+			
+			\node[inner sep=0pt, anchor=west] (author) at (7.5cm,0.2cm) {\usebeamerfont{author}\setstretch{0.5}\parbox{9cm}{\textcolor{black}{\insertVenue}}};
+			
+			\node[at=(current page.north east),transform canvas={xshift = -2.25cm, yshift = -.75cm}] {\href{https://www.gwdg.de/}{\includegraphics[width=3.7cm,height=1.2cm,keepaspectratio]{gwdg}}};%
+			
+			\node[inner sep=0pt, anchor=east] (unit) at (\the\paperwidth-0.4cm,\the\paperheight-2.5cm) {\URLColor{colorBlue}{\insertAuthorURL}};
+			
+		\end{tikzpicture}
+		)
+	}
+	
+}
+
+\renewcommand{\applyextrasettings}{
+	\useoutertheme{infolines}
+	
+	%\setbeamercovered{transparent}
+	
+	\setbeamertemplate{blocks}[rounded][shadow=false]
+	
+	\setbeamertemplate{enumerate items}[default]
+	
+	\setbeamertemplate{itemize subitem}{\textcolor{black}{-}}
+	\setbeamertemplate{itemize subsubitem}{\textcolor{black}{\textbullet}}
+	
+	\setbeamerfont{block title}{size={}}
+	
+	\setbeamertemplate{section in toc}[default]
+	
+	\usebackgroundtemplate%
+	{%
+	\begin{tikzpicture}[overlay, remember picture]%
+	% Wallpaper image
+	\node[at=(current page.center)] {\includegraphics[height=\paperheight,width=\paperwidth]{gwdg-background}};%
+	% GWDG logo
+	\node[at=(current page.north east),transform canvas={xshift = -2.25cm, yshift = -.75cm}] {\href{https://www.gwdg.de/}{\includegraphics[width=3.7cm,height=1.2cm,keepaspectratio]{gwdg}}};%
+	\end{tikzpicture}%
+	}
+	
+	\beamertemplatenavigationsymbolsempty
+	
+	\setbeamercolor{palette primary}{use=normal text,fg=colorBlue3}
+	\setbeamercolor{palette secondary}{use=structure,fg=colorBlue3}
+	\setbeamercolor{palette sidebar tertiary}{use=normal text,fg=colorBlue3}
+	\setbeamercolor{palette sidebar quaternary}{use=structure,fg=colorBlue3}
+	
+	\setbeamercolor{frametitle}{fg=colorBlue3}
+	\setbeamercolor{normal text}{bg=white,fg=black}
+	\setbeamercolor{structure}{fg=colorBlue}
+	\setbeamercolor{local structure}{fg=colorBlue}
+	
+	%\setbeamercolor{date in head/foot}{fg=colorBlue3}
+	%\setbeamercolor{author in head/foot}{fg=colorBlue3}
+	%\setbeamercolor{section in head/foot}{fg=colorBlue3}
+	
+	\setbeamercolor{title}{fg=colorGray}
+	\setbeamercolor{titlelike}{fg=colorBlue3}
+	
+	\setbeamercolor{block title}{fg=white,bg=colorBlue}
+	\setbeamercolor{block body}{fg=black,bg=white!90!colorBlue}
+	
+	\setbeamercolor{block title example}{fg=colorBlue,bg=white!90!colorBlue}
+	\setbeamercolor{block body example}{fg=black,bg=white!90!colorBlue}
+	
+	\setbeamercolor{section number projected}{fg=colorBlue}
+	\setbeamercolor{section in toc}{fg=colorBlue3}
+	\setbeamercolor{subsection in toc}{fg=colorBlue3}
+	
+}

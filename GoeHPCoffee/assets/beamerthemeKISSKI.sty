@@ -1,0 +1,74 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% KISSKI Presentation Theme
+% LaTeX Template
+% Version 2.3.1 (2024-02-19)
+%
+% This template was adapted by:
+% Jonathan Decker (jonathan.decker@uni-goettingen.de)
+% From a template made by:
+% Julian Kunkel (julian.kunkel@gwdg.de)
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\definecolor{colorBlue}{HTML}{244e70}
+\definecolor{colorBlue2}{HTML}{695ea2}
+\definecolor{colorBlue3}{HTML}{b4388d}
+\definecolor{colorGray}{HTML}{f2f2f2}
+
+
+\newcommand{\myfooterimage}{kisski-logo.png}
+\newcommand{\mygrouplogo}{\includegraphics[width=5cm]{kisski-logo.png}}
+\newcommand{\mytitlelogo}{}
+
+\newcommand{\applyfooterlinetemplate}{
+
+	\setbeamertemplate{footline}[text line]{
+		\begin{beamercolorbox}[sep=0.5em,wd=\paperwidth,leftskip=0.2cm,rightskip=0.1cm]{footlinecolor}
+			\myauthor \hfill \includegraphics[height=1.5em]{\myfooterimage} \hfill \insertVenue \hfill \insertframenumber\,/\,\ref{pg:lastpage}
+		\end{beamercolorbox}
+	}
+
+}
+
+\newcommand{\applytitlepagetemplate}{
+	
+	\defbeamertemplate*{title page}{customized}[1][]
+	{
+		\hspace*{-2cm}
+		\begin{tikzpicture}
+			
+			\node[inner sep=0pt] (logo) at (3.5cm,\the\paperheight-0.8cm) {
+				{\insertTitleLogo}};
+			
+			\node[inner sep=0pt, anchor=west,text width=\the\paperwidth-1cm] (title) at (2cm,4.2cm) {\usebeamerfont{title}\Huge\textcolor{colorBlue}{\inserttitle}};
+			
+			\node[inner sep=0pt, anchor=west,text width=\the\paperwidth-2cm] (title) at (2cm,3.2cm) {\usebeamerfont{subtitle}%
+				\textcolor{gray}{\insertsubtitle}};
+			
+			\node[inner sep=0pt, anchor=west] (author) at (2cm,5.2cm) {\usebeamerfont{author}\setstretch{0.5}\parbox{9cm}{\textcolor{gray}{ \insertauthor }}};
+			
+			\fill[color=colorGray] (0,-1cm) rectangle (\the\paperwidth+2cm,0.5cm);
+			
+			\fill[left color=colorBlue, right color=colorBlue2] (0,\the\paperheight-1.5cm) rectangle (\the\paperwidth+2cm,\the\paperheight-1.45cm);
+			
+			\fill[color=colorBlue3] (\the\paperwidth-5cm,\the\paperheight-1.6cm) rectangle (\the\paperwidth+2cm,\the\paperheight-1.55cm);
+			
+			\node[inner sep=0pt, anchor=east] (author) at (\the\paperwidth+1cm,2.3cm) {\insertTitleLogo};
+			
+			\node[inner sep=0pt, anchor=east] (author) at (\the\paperwidth+0.5cm,0.5cm) {\tiny \insertTitleLicense};
+			
+			\node[inner sep=0pt, anchor=west] (unit) at (2cm,\the\paperheight-1.1cm) {\textcolor{gray}{\insertAuthorURL}};
+			
+			\node[inner sep=0pt, anchor=east] (unit) at (\the\paperwidth,\the\paperheight-1.1cm) {\textcolor{gray}{\insertinstitute}};
+			
+			\node[inner sep=0pt, anchor=west] (unit) at (1.2cm,0.2cm) {\scriptsize \textcolor{black}{\insertdate}};
+			
+			\node[inner sep=0pt, anchor=west] (author) at (7.5cm,0.2cm) {\usebeamerfont{author}\setstretch{0.5}\parbox{9cm}{\textcolor{black}{\insertVenue}}};
+			
+			\node[inner sep=0pt, anchor=east] (logo) at (\the\paperwidth,\the\paperheight-3cm) {\insertgroupLogo};
+			
+		\end{tikzpicture}
+		)
+	}
+	
+}
