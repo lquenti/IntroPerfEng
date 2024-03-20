@@ -56,6 +56,7 @@
         \item Statistical Profiling
         \item CI benchmarking
         \item Parallelism
+        \item MPI
       \end{itemize}
   \end{itemize}
 \end{frame}
@@ -461,23 +462,23 @@
   \end{itemize}
 \end{frame}
 
-% \begin{frame}{Rayon (cond.)}
-%   \begin{tcolorbox}[title=Unported Code (no transpose)]
-%     \footnotesize\inputminted[xleftmargin=1em,linenos]{rust}{./assets/01rayon.rs}
-%   \end{tcolorbox}
-% \end{frame}
-%
-% \begin{frame}{Rayon (cond.)}
-%   \begin{tcolorbox}[title=Ported to Iterators]
-%     \footnotesize\inputminted[xleftmargin=1em,linenos]{rust}{./assets/02rayon.rs}
-%   \end{tcolorbox}
-% \end{frame}
-%
-% \begin{frame}{Rayon (cond.)}
-%   \begin{tcolorbox}[title=Ported to Iterators \textbf{and Parallelized!}]
-%     \footnotesize\inputminted[xleftmargin=1em,linenos]{rust}{./assets/03rayon.rs}
-%   \end{tcolorbox}
-% \end{frame}
+\begin{frame}{Rayon (cond.)}
+  \begin{tcolorbox}[title=Unported Code (no transpose)]
+    \footnotesize\inputminted[xleftmargin=1em,linenos]{rust}{./assets/01rayon.rs}
+  \end{tcolorbox}
+\end{frame}
+
+\begin{frame}{Rayon (cond.)}
+  \begin{tcolorbox}[title=Ported to Iterators]
+    \footnotesize\inputminted[xleftmargin=1em,linenos]{rust}{./assets/02rayon.rs}
+  \end{tcolorbox}
+\end{frame}
+
+\begin{frame}{Rayon (cond.)}
+  \begin{tcolorbox}[title=Ported to Iterators \textbf{and Parallelized!}]
+    \footnotesize\inputminted[xleftmargin=1em,linenos]{rust}{./assets/03rayon.rs}
+  \end{tcolorbox}
+\end{frame}
 
 \begin{frame}{MPI}
   \begin{columns}
@@ -516,6 +517,26 @@
       \end{block}
     \end{column}
   \end{columns}
+\end{frame}
+
+\begin{frame}{Best rsmpi features: \texttt{UserOperation} (requires \texttt{libffi})}
+  \begin{tcolorbox}
+    \footnotesize\inputminted[xleftmargin=1em,linenos]{rust}{./assets/userop.rs}
+  \end{tcolorbox}
+\end{frame}
+
+\begin{frame}{Best rsmpi features: \texttt{Equivalence} macro}
+  \begin{tcolorbox}
+    \footnotesize\inputminted[xleftmargin=1em,linenos]{rust}{./assets/eq.rs}
+  \end{tcolorbox}
+\end{frame}
+
+\begin{frame}{Best rsmpi features: mpi4py integration}
+  \begin{itemize}
+    \item Relies on \texttt{PyO3}
+    \item Automatically generates python FFI bindings
+    \item See example Repo: \url{https://github.com/betckegroup/mpi4py_with_rsmpi}
+  \end{itemize}
 \end{frame}
 
 \section{Conclusion}
